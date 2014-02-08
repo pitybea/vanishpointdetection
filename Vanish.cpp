@@ -158,8 +158,9 @@ auto skyDetect(const Mat& osrc)->vector<pair<double,double> >
 		drawPoints(cdst,sth);
 		++ab;
 	}
-
+#ifdef presentationMode_on
 	imshow("detected lines", cdst);
+#endif
 	return rslt;
 	
 }
@@ -187,9 +188,11 @@ auto houghLine(const Mat& osrc)->vector<Vec4i>
 
 	vector<Vec4i> lines;
 	HoughLinesP(dst, lines, 1, CV_PI/180, houghThreshold, houghMinLineLength, houghMaxLineGap );
+#ifdef presentationMode_on
 	drawHlines(src,lines);
 	
 	imshow("source", src);
+#endif
 	return lines;
 }
 
@@ -243,11 +246,12 @@ auto trajectoryDetect(const vector<Mat>& imgs,int index)->vector<vector<Point2f>
 		 }
 
 		
-
+#ifdef presentationMode_on
 		 drawTrajs(copy,cornerss);
 
 
 		imshow( "what ever", copy );
+#endif
 		return cornerss;
 		
 
@@ -306,7 +310,7 @@ template<class pttype>
 double pointToLineDis(double a,double b,const pttype& pt)
 {
 	if(abs(a)<0.0001)
-		a=(a>0)?0.0001:-0.001;
+		a=(a>0)?0.0001:-0.0001;
 	double x=b/a;
 	double y=b;
 	return abs((a*pt.x+b-pt.y)*x/sqrt(x*x+y*y));
@@ -369,11 +373,6 @@ Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
 {
 	Point rslt;
 
-	Mat copy=img.clone();
-	
-	
-	drawPoint(copy,skyVpts[index]);
-	
 
 	static bool skyVpt_turnoff=false;//notice, this is a in-function static variable, though I dislike this a lot
 	if(!skyVpt_turnoff)
@@ -495,6 +494,11 @@ Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
 			largindex=i;
 		}
 	}
+#ifdef presentationMode_on
+	Mat copy=img.clone();
+	
+	
+	drawPoint(copy,skyVpts[index]);
 
 	drawHlines(copy,hlines,hlnlbs);
 	drawTrajs(copy,trjs,trjlbs);
@@ -507,6 +511,6 @@ Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
 	drawTrajs(copy,trjs,trjlbs,false);
 	drawPoint(copy,candidates[largindex]);
 	imshow("newrslt",copy);
-
+#endif
 	return candidates[largindex];
 }

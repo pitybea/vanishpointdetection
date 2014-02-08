@@ -4,14 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Vanish.h"
-
+#include <iostream>
 using namespace std;
 
+static string cities[3]={"ny","paris","kyoto"};
 
-
-int main(int argc, char* argv[])
+void vanishiDetectForCity(string s)
 {
-	_chdir("E:\\vanish\\dataset\\paris");
+	_chdir(((string)"E:\\vanish\\dataset\\"+s).c_str());
 
 	auto flnms=fileIOclass::InVectorString("img.lst");
 
@@ -37,9 +37,11 @@ int main(int argc, char* argv[])
 				y+=vnspts[j].y;
 				count++;
 			}
+#ifdef presentationMode_on
 			Mat copy=imgs[i].clone();
 			int thickness = -1;
 			int lineType = 8;
+
 			circle( copy,
 			 Point(x/count,y/count),
 			 4,
@@ -47,14 +49,34 @@ int main(int argc, char* argv[])
 			 thickness,
 			 lineType );
 			imshow("final_reslt",copy);
-			waitKey();
+			imwrite(flnms[i]+"_v.jpg",copy);
+	//		waitKey();
+#endif
 		}
 
 		
 		
-		
-		
-		
 	}
+}
+
+int main(int argc, char* argv[])
+{
+	//auto begin=GetSystemTime();
+	LARGE_INTEGER m_nFreq;
+	LARGE_INTEGER m_nBeginTime;
+	LARGE_INTEGER nEndTime;
+	long a;
+	QueryPerformanceFrequency(&m_nFreq); // 获取时钟周期
+	QueryPerformanceCounter(&m_nBeginTime); // 获取时钟计数
+
+	for(auto &s:cities)
+		vanishiDetectForCity(s);
+
+	QueryPerformanceCounter(&nEndTime);
+		a=(nEndTime.QuadPart-m_nBeginTime.QuadPart)*1000/m_nFreq.QuadPart;
+	std::cout<<a<<endl;
+
+//63629
+	getchar();
 	return 0;
 }
