@@ -1,4 +1,4 @@
-#define presentationMode_on
+//#define presentationMode_on
 
 const int xBlurSize=3;
 const int yBlursize=3;

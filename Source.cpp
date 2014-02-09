@@ -9,6 +9,23 @@ using namespace std;
 
 static string cities[3]={"ny","paris","kyoto"};
 
+vector<long> timeStatistics(4,0.0);
+
+LARGE_INTEGER m_nFreq; //dirty and quick
+
+LARGE_INTEGER prv,cur;
+
+inline long toReadableTime(LARGE_INTEGER m_nBeginTime,
+	LARGE_INTEGER nEndTime)
+{
+	return (nEndTime.QuadPart-m_nBeginTime.QuadPart)*1000/m_nFreq.QuadPart;
+}
+inline void timeSta(LARGE_INTEGER & previous,LARGE_INTEGER & current,long & tperiod)
+{
+	QueryPerformanceCounter(&current);
+	tperiod+=toReadableTime(previous,current);
+	previous=current;
+}
 void vanishiDetectForCity(string s)
 {
 	_chdir(((string)"E:\\vanish\\dataset\\"+s).c_str());
@@ -21,15 +38,20 @@ void vanishiDetectForCity(string s)
 	for(size_t i=0;i<flnms.size();++i)
 	{
 		imgs[i]=imread(flnms[i]+".jpg");
-
-//		skyDetect(imgs[i]);
+		
+		QueryPerformanceCounter(&prv);
 		skyVanish[i]=vanishFromSky(imgs[i]);
+		timeSta(prv,cur,timeStatistics[0]);
 		auto lines=houghLine(imgs[i]);
+		timeSta(prv,cur,timeStatistics[1]);
 		if(i>trajectoryL)
 		{
 			auto trjs=trajectoryDetect(imgs,(int)i);
+			timeSta(prv,cur,timeStatistics[2]);
 
 			vnspts[i]=vanishPointDecide(imgs[i],i,skyVanish,lines,trjs);
+			timeSta(prv,cur,timeStatistics[3]);
+
 			int x=0;int y=0;int count=0;
 			for (int j = trajectoryL+1; j <=i; j++)
 			{
@@ -59,24 +81,37 @@ void vanishiDetectForCity(string s)
 	}
 }
 
+
+
+
+
 int main(int argc, char* argv[])
 {
 	//auto begin=GetSystemTime();
-	LARGE_INTEGER m_nFreq;
+
 	LARGE_INTEGER m_nBeginTime;
 	LARGE_INTEGER nEndTime;
-	long a;
-	QueryPerformanceFrequency(&m_nFreq); // 获取时钟周期
-	QueryPerformanceCounter(&m_nBeginTime); // 获取时钟计数
+//	long a;
+	QueryPerformanceFrequency(&m_nFreq); 
+	QueryPerformanceCounter(&m_nBeginTime); 
 
 	for(auto &s:cities)
 		vanishiDetectForCity(s);
 
 	QueryPerformanceCounter(&nEndTime);
-		a=(nEndTime.QuadPart-m_nBeginTime.QuadPart)*1000/m_nFreq.QuadPart;
-	std::cout<<a<<endl;
+
+	std::cout<<toReadableTime(m_nBeginTime,nEndTime)<<endl;
+	for(const auto& t:timeStatistics)
+		std::cout<<t<<endl;
 
 //63629
+	/*
+	5.97826087
+	16.80383698
+	67.86950846
+	9.348393688
+
+	*/
 	getchar();
 	return 0;
 }
