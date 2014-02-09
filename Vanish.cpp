@@ -242,7 +242,10 @@ auto trajectoryDetect(const vector<Mat>& imgs,int index)->vector<vector<Point2f>
 
 		 for (int i = 0; i < trajectoryL-1; i++)
 		 {
-			 calcOpticalFlowPyrLK(imgs[index-i],imgs[index-i-1],cornerss[i],cornerss[i+1],status,err,Size(kptTrack_winsize,kptTrack_winsize),kptTrack_maxlevel, termcrit, 0, 0.001);
+			 calcOpticalFlowPyrLK(imgs[index-i],imgs[index-i-1],
+				 cornerss[i],cornerss[i+1],status,err,
+				 Size(kptTrack_winsize,kptTrack_winsize),
+				 kptTrack_maxlevel, termcrit, 0, 0.001);
 		 }
 
 		

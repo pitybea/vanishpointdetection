@@ -1,5 +1,5 @@
 //#define presentationMode_on
-
+//#define step_time_Consumption
 const int xBlurSize=3;
 const int yBlursize=3;
 
