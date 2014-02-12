@@ -271,7 +271,8 @@ void trainTest_forCity(string s)
 	for(const auto &imgn:flnms)
 	{
 		Mat img=imread(imgn+".jpg");
-		SampleExamples(img,
+		SampleExamples(img,trainPoss,testPoss,trainImgs,testImgs);
+
 		imshow("show",img);
 		waitKey();
 	}
