@@ -6,6 +6,7 @@
 #include "Vanish.h"
 #include <iostream>
 #include <thread>
+#include "trainTest.h"
 using namespace std;
 
 
@@ -13,9 +14,12 @@ using namespace std;
 vector<long> timeStatistics(4,0.0);
 LARGE_INTEGER prv,cur;
 #endif
+
 LARGE_INTEGER m_nFreq; //dirty and quick
 
 static string cities[3]={"ny","paris","kyoto"};
+
+bool statistics_forCues=true;
 
 inline long toReadableTime(LARGE_INTEGER m_nBeginTime,
 	LARGE_INTEGER nEndTime)
@@ -31,6 +35,48 @@ inline void timeSta(LARGE_INTEGER & previous,LARGE_INTEGER & current,long & tper
 }
 #endif
 
+void markGroundTruesForCities(string ss)
+{
+	_chdir(((string)"E:\\vanish\\dataset\\"+ss).c_str());
+	auto flnms=fileIOclass::InVectorString("img.lst");
+	for(const auto&s:flnms)
+	{
+		Mat img=imread(s+".jpg");
+		namedWindow("result");
+		imshow("result",img);
+
+		
+
+		Point p;
+//		func(3,4);
+		setMouseCallback("result",[](int e,int x,int y,int d,void* ptr){
+			if  (e == EVENT_LBUTTONDOWN )	
+			{
+				auto& p=((pair<Point&,Mat&>*)ptr)->first;
+				p.x=x,p.y=y;
+				int thickness = -1;
+				int lineType = 8;
+				auto& img=((pair<Point&,Mat&>*)ptr)->second;
+				circle( img,
+				 p,
+				 4,
+				 Scalar( 0, 255, 255 ),
+				 thickness,
+				 lineType );
+				imshow("result",img);
+			}//			(*(void (*)(int,int))ptr)(x,y);	
+			
+			
+		},&pair<Point&,Mat&>(p,img));
+		
+		waitKey();
+		FILE* fp;
+		fopen_s(&fp,(s+"_gth.txt").c_str(),"w");
+		fprintf(fp,"%d %d",p.x,p.y);
+		fclose(fp);
+	}
+}
+
 void vanishiDetectForCity(string s)
 {
 	_chdir(((string)"E:\\vanish\\dataset\\"+s).c_str());
@@ -42,6 +88,7 @@ void vanishiDetectForCity(string s)
 	vector<Point> vnspts(flnms.size());
 	for(size_t i=0;i<flnms.size();++i)
 	{
+		printf("%s ",flnms[i].c_str());
 		imgs[i]=imread(flnms[i]+".jpg");
 #ifdef  step_time_Consumption		
 		QueryPerformanceCounter(&prv);
@@ -60,7 +107,11 @@ void vanishiDetectForCity(string s)
 #ifdef  step_time_Consumption
 			timeSta(prv,cur,timeStatistics[2]);
 #endif
-			vnspts[i]=vanishPointDecide(imgs[i],i,skyVanish,lines,trjs);
+			vector<Point> vcues;
+			if(statistics_forCues)
+				vnspts[i]=vanishPointDecide(imgs[i],i,skyVanish,lines,trjs,true,vcues);
+			else
+				vnspts[i]=vanishPointDecide(imgs[i],i,skyVanish,lines,trjs);
 #ifdef  step_time_Consumption
 			timeSta(prv,cur,timeStatistics[3]);
 #endif
@@ -70,6 +121,19 @@ void vanishiDetectForCity(string s)
 				x+=vnspts[j].x;
 				y+=vnspts[j].y;
 				count++;
+			}
+			auto rslt =	Point(x/count,y/count);
+			if(statistics_forCues)
+			{
+				FILE* fp;
+				fopen_s(&fp,(flnms[i]+"_vpts.txt").c_str(),"w");
+				fprintf(fp,"%d %d\n",rslt.x,rslt.y);
+				for (size_t j = 0; j < vcues.size(); j++)
+				{
+					fprintf(fp,"%d %d\n",vcues[j].x,vcues[j].y);
+				}
+				fclose (fp);
+
 			}
 #ifdef presentationMode_on
 			Mat copy=imgs[i].clone();
@@ -110,6 +174,7 @@ void vanishiDetectForCity_multiThread(string s)
 
 	for(size_t i=0;i<flnms.size();++i)
 	{
+		printf("%s ",flnms[i].c_str());
 		imgs[i]=imread(flnms[i]+".jpg");
 		if(i<=trajectoryL)
 		{
@@ -131,6 +196,7 @@ void vanishiDetectForCity_multiThread(string s)
 				y+=vnspts[j].y;
 				count++;
 			}
+			auto rslt =	Point(x/count,y/count);
 #ifdef presentationMode_on
 			Mat copy=imgs[i].clone();
 			int thickness = -1;
@@ -153,9 +219,63 @@ void vanishiDetectForCity_multiThread(string s)
 	}
 }
 
+void evluate_forCity(string s)
+{
+	_chdir(((string)"E:\\vanish\\dataset\\"+s).c_str());
 
+	auto flnms=fileIOclass::InVectorString("img.lst");
+	vector<vector<double>> rslts(4,vector<double>(flnms.size()));
+	for(size_t i=0;i<flnms.size();i++)
+	{
+		string& ss=flnms[i];
+		FILE* fp1,*fp2;
+		Point gt;
+		fopen_s(&fp1,(ss+"_gth.txt").c_str(),"r");
+		
+		fopen_s(&fp2,(ss+"_vpts.txt").c_str(),"r");
+		if(fp1&&fp2)
+		{
+			fscanf_s(fp1,"%d %d",&gt.x,&gt.y);
+			vector<Point> pts(4);
+			for (int j = 0; j < 4; j++)
+			{
+				fscanf_s(fp2,"%d %d\n",&pts[j].x,&pts[j].y);
+				rslts[j][i]=cv::norm(pts[j]-gt);
+			}
+			
+			fclose(fp1);fclose(fp2);
+		}
+	}
+	FILE* fp;
+	fopen_s(&fp,(s+"_rslts.txt").c_str(),"w");
+	for (int i = 0; i < flnms.size(); i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			fprintf(fp,"%lf ",rslts[j][i]);
+		}
+		fprintf(fp,"\n");
+	}
+	fclose(fp);
+}
 
+void trainTest_forCity(string s)
+{
+	_chdir(((string)"E:\\vanish\\dataset\\"+s).c_str());
 
+	auto flnms=fileIOclass::InVectorString("img.lst");
+	vector<Point> trainPoss;
+	vector<Point> testPoss;
+	vector<Mat> trainImgs;
+	vector<Mat> testImgs;
+	for(const auto &imgn:flnms)
+	{
+		Mat img=imread(imgn+".jpg");
+		SampleExamples(img,
+		imshow("show",img);
+		waitKey();
+	}
+}
 
 
 int main(int argc, char* argv[])
@@ -178,8 +298,11 @@ int main(int argc, char* argv[])
 	QueryPerformanceCounter(&m_nBeginTime); 
 
 	for(auto &s:cities)
-		vanishiDetectForCity_multiThread(s);
-
+		//markGroundTruesForCities(s);
+	{
+	//	vanishiDetectForCity(s);
+	//		evluate_forCity(s);
+	}
 	QueryPerformanceCounter(&nEndTime);
 
 	std::cout<<toReadableTime(m_nBeginTime,nEndTime)<<endl;

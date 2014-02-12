@@ -372,7 +372,8 @@ void HlineTrajCorr(const vector<Point2f>& pts,const Vec4i& hline,vector<int>& rs
 }
 
 Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
-	const vector<Vec4i> & hlines,const vector<vector<Point2f> > & trjs)
+	const vector<Vec4i> & hlines,const vector<vector<Point2f> > & trjs,
+	bool vFrmEchCue,vector<Point> &vCues)
 {
 	Point rslt;
 
@@ -437,7 +438,14 @@ Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
 	}
 
 	vector<Point> candidates;
+	if(vFrmEchCue)
+	{
+		vCues.resize(3);
+	
+		vCues[0]=skyVpts[index];
 
+	}
+	
 	if (!skyVpt_turnoff)
 	{
 		int middlex=skyVpts[index].x;
@@ -469,6 +477,8 @@ Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
 
 	double largeConfi=0.0;
 	int largindex=0;
+	double largeConfi_motion=0.0;
+	double largeConfi_structure=0.0;
 
 	for (int i = 0; i < candidates.size(); i++)
 	{
@@ -482,13 +492,29 @@ Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
 				
 			}
 		}
-
+		if(vFrmEchCue)
+		{
+			if (candidateConfidence[i]>largeConfi_structure)
+			{
+				largeConfi_structure=candidateConfidence[i];
+				vCues[1]=candidates[i];
+			}
+		}
+		double tem_Confidence_structure=0;
 		for (int j = 0; j < abln_hlines.size(); j++)
 		{
 			if(hlnlbs[j])
 			{
 				if(pointToLineDis(abln_hlines[j].first,abln_hlines[j].second,candidates[i])<candidateSelectThres_hline)
 					candidateConfidence[i]+=hline_weight;
+			}
+		}
+		if(vFrmEchCue)
+		{
+			if((candidateConfidence[i]-tem_Confidence_structure)>largeConfi_motion)
+			{
+				largeConfi_motion=candidateConfidence[i]-tem_Confidence_structure;
+				vCues[2]=candidates[i];
 			}
 		}
 		if (candidateConfidence[i]>largeConfi)
