@@ -4,7 +4,7 @@ inline int grayValue(const Mat& grayimg,int x,int y)
 {
 	return static_cast<int>(grayimg.at<uchar>(Point(x,y)));
 }
-bool evaluateByCanny(const Mat& cimg,const Point& pt)
+bool evaluateByCanny(const Mat& cimg,const Point& pt,double ratio)
 {
 	int rslt=0;
 	int start_x=pt.x-traintest::Example_width/2;
@@ -13,22 +13,25 @@ bool evaluateByCanny(const Mat& cimg,const Point& pt)
 	{
 		for (int j = start_y; j < start_y+traintest::Example_height; j++)
 		{
-			if(grayValue(cimg,i,j)==1) ++rslt;
+			if(grayValue(cimg,i,j)!=0) ++rslt;
 		}
 	}
 	int area=traintest::Example_width*traintest::Example_height;
 
-	return ((double)rslt/area)>traintest::edge_ratio;
+	return ((double)rslt/area)>ratio;
 
 	//return rslt;
 }
 
 bool inImage(int width,int height,const Point& pt)
 {
-	return (pt.x>1)&&(pt.x<(width-1))&&(pt.y>1)&&(pt.y<(height-1));
+	return (pt.x>1+traintest::Example_width/2)
+		&&(pt.x<(width-1-traintest::Example_width/2))
+		&&(pt.y>1+traintest::Example_height/2)
+		&&(pt.y<(height-1-traintest::Example_height/2));
 }
 void SampleExamples(const Mat& img, vector<Point>& trainposs,vector<Point>& testposs,
-					vector<Mat>& trainimgs, vector<Mat>& testimgs)
+					vector<Mat>& trainimgs, vector<Mat>& testimgs,double ratio)
 {
 	 static std::default_random_engine generator(::time(0));
      std::uniform_real_distribution<float> distribution(0.0, 1);
@@ -46,9 +49,9 @@ void SampleExamples(const Mat& img, vector<Point>& trainposs,vector<Point>& test
 	 return Rect(pt.x-wth,pt.y-ht,wth*2,ht*2);};
 	 while(train_num<traintest::Train_example_num)
 	 {
-		 Point pt((double)img_width/2*distribution(generator),
+		 Point pt((double)(img_width/2-traintest::Train_test_offset)*distribution(generator),
 			 (double)img_height*distribution(generator));
-		 if(inImage(img_width,img_height,pt)&&evaluateByCanny(dst,pt))
+		 if(inImage(img_width,img_height,pt)&&evaluateByCanny(dst,pt,ratio))
 		 {
 			 ++train_num;
 			 trainposs.push_back(pt);
@@ -58,9 +61,9 @@ void SampleExamples(const Mat& img, vector<Point>& trainposs,vector<Point>& test
 	 }
 	 while(test_num<traintest::Test_example_num)
 	 {
-		 Point pt((double)img_width/2*distribution(generator)+img_width/2,
+		 Point pt((double)img_width/2*distribution(generator)+img_width/2+traintest::Train_test_offset,
 			 (double)img_height*distribution(generator));
-		 if(inImage(img_width,img_height,pt)&&evaluateByCanny(dst,pt))
+		 if(inImage(img_width,img_height,pt)&&evaluateByCanny(dst,pt,ratio))
 		 {
 			 ++test_num;
 			 testposs.push_back(pt);

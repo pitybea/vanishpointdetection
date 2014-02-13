@@ -15,11 +15,22 @@ vector<long> timeStatistics(4,0.0);
 LARGE_INTEGER prv,cur;
 #endif
 
+
+void drawCircle(Mat& img,Point pt,Scalar s=Scalar( 0, 255, 255 ),int siz=4)
+{
+		circle( img,
+				 pt,
+				 siz,
+				 s,
+				 2,
+				 8 );
+}
+
 LARGE_INTEGER m_nFreq; //dirty and quick
 
 static string cities[3]={"ny","paris","kyoto"};
 
-bool statistics_forCues=true;
+bool statistics_forCues=false;
 
 inline long toReadableTime(LARGE_INTEGER m_nBeginTime,
 	LARGE_INTEGER nEndTime)
@@ -259,7 +270,7 @@ void evluate_forCity(string s)
 	fclose(fp);
 }
 
-void trainTest_forCity(string s)
+void trainTest_forCity(string s,double edgeratio=traintest::edge_ratio)
 {
 	_chdir(((string)"E:\\vanish\\dataset\\"+s).c_str());
 
@@ -268,18 +279,51 @@ void trainTest_forCity(string s)
 	vector<Point> testPoss;
 	vector<Mat> trainImgs;
 	vector<Mat> testImgs;
+	vector<string> trainnms;
+	vector<string> testnms;
+	int tm1=0,tm2=0;
 	for(const auto &imgn:flnms)
 	{
+		printf("%s ",imgn.c_str());
 		Mat img=imread(imgn+".jpg");
-		SampleExamples(img,trainPoss,testPoss,trainImgs,testImgs);
+		SampleExamples(img,trainPoss,testPoss,trainImgs,testImgs,edgeratio);
+		for (int j = tm1; j < trainPoss.size(); j++)
+		{
+			drawCircle(img,trainPoss[j],Scalar(0,255,0),5);
+			trainnms.push_back(imgn+"_train_"+to_string(j-tm1));
+		}
+		for (int j = tm2; j < testPoss.size(); j++)
+		{
+			drawCircle(img,testPoss[j],Scalar(0,0,255),5);
+			testnms.push_back(imgn+"_test_"+to_string(j-tm1));
+		}
+		
+
+		tm1=trainPoss.size();
+		tm2=trainPoss.size();
 
 		imshow("show",img);
-		waitKey();
+		//waitKey();
 	}
+	auto func=[](string n,const vector<string>& nms,const vector<Mat>& imgs)
+	{
+		FILE* fp;
+		fopen_s(&fp,(n+".txt").c_str(),"w");
+		fprintf(fp,"%d\n",nms.size());
+		for(int i=0;i<nms.size();i++)
+		{
+			fprintf(fp,"%s\n",nms[i].c_str());
+			imwrite(nms[i]+".jpg",imgs[i]);
+		}
+
+		fclose(fp);
+	};
+	func("train",trainnms,trainImgs);
+	func("test",testnms,testImgs);
 }
 
 
-int main(int argc, char* argv[])
+int main_(int argc, char* argv[])
 {
 	//auto begin=GetSystemTime();
 	/*
@@ -299,11 +343,15 @@ int main(int argc, char* argv[])
 	QueryPerformanceCounter(&m_nBeginTime); 
 
 	for(auto &s:cities)
+		vanishiDetectForCity(s);
 		//markGroundTruesForCities(s);
-	{
+	
 	//	vanishiDetectForCity(s);
 	//		evluate_forCity(s);
-	}
+	//	trainTest_forCity(cities[0]);
+	//	trainTest_forCity(cities[1],0.09);
+	//	trainTest_forCity(cities[2],0.085);
+	
 	QueryPerformanceCounter(&nEndTime);
 
 	std::cout<<toReadableTime(m_nBeginTime,nEndTime)<<endl;

@@ -1,5 +1,8 @@
+#pragma once
 #include "ttsetting.inl"
-#include "settings.inl"
+#include "vsettings.inl"
+using namespace vanish;
+
 #include <vector>
 #include <string>
 
@@ -13,4 +16,4 @@ using namespace cv;//dirty and quick
 
 
 void SampleExamples(const Mat& img, vector<Point>& tranposs,vector<Point>& testposs,
-					vector<Mat>& trainimgs, vector<Mat>& testimgs);
+					vector<Mat>& trainimgs, vector<Mat>& testimgs,double ratio);
