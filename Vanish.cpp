@@ -212,6 +212,19 @@ void drawTrajs(Mat& img,const vector<vector<Point2f> >& trjs,vector<bool> lbs=ve
 	}
 }
 
+
+auto incrementalTrajectoryDetect(const vector<Mat>& imgs)-> vector<vector<Point2f> >
+{
+	assert(imgs.size()>=2);
+	vector<vector<Point2f> > trajs;
+
+
+
+
+	return trajs;
+}
+
+
 auto trajectoryDetect(const vector<Mat>& imgs,int index)->vector<vector<Point2f> > 
 {
 
@@ -371,14 +384,14 @@ void HlineTrajCorr(const vector<Point2f>& pts,const Vec4i& hline,vector<int>& rs
 	
 }
 
-Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
+Point vanishPointDecide(bool& skyVpt_turnoff,const Mat& img,int index,const vector<Point> & skyVpts,
 	const vector<Vec4i> & hlines,const vector<vector<Point2f> > & trjs,
 	bool vFrmEchCue,vector<Point> &vCues)
 {
 	Point rslt;
 
 
-	static bool skyVpt_turnoff=false;//notice, this is a in-function static variable, though I dislike this a lot
+	//static =false;//notice, this is a in-function static variable, though I dislike this a lot
 	if(!skyVpt_turnoff)
 	{
 		maxChange(index,skyVpts,skyVpt_turnoff);
@@ -450,9 +463,9 @@ Point vanishPointDecide(const Mat& img,int index,const vector<Point> & skyVpts,
 	{
 		int middlex=skyVpts[index].x;
 		int middley=skyVpts[index].y;
-		for (int x=middlex-halfSearchSizeX/4;x<middlex+halfSearchSizeX/4;x+=firstSearchStepx/2)
+		for (int x=middlex-halfSearchSizeX/10;x<middlex+halfSearchSizeX/10;x+=firstSearchStepx/3)
 		{
-			for (int y = middley-halfSearchSizeY/4; y < middley+halfSearchSizeY/4; y+=firstSearchStepy/2)
+			for (int y = middley-halfSearchSizeY/10; y < middley+halfSearchSizeY/10; y+=firstSearchStepy/3)
 			{
 				candidates.push_back(Point(x,y));
 			}
