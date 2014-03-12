@@ -7,7 +7,7 @@ using namespace traj;
 
 
 
-auto incrementalTrajectoryDetectCore(const vector<Mat>& imgs)-> pair<vector< pair<vector<Point2f> ,vector<Point2f> > >, vector<map<size_t,size_t>>>
+auto incrementalTrajectoryDetectCore(const vector<string>& imgs)-> pair<vector< pair<vector<Point2f> ,vector<Point2f> > >, vector<map<size_t,size_t>>>
 {
 	assert(imgs.size()>=2);
 
@@ -25,111 +25,112 @@ auto incrementalTrajectoryDetectCore(const vector<Mat>& imgs)-> pair<vector< pai
 
 	size_t thr_num1=imgs.size()-1;
 
-	thread* thrds1=new thread[thr_num1];
+	//thread* thrds1=new thread[thr_num1];
 
 	
-
-	for (size_t i = 0; i < thr_num1; i++)
+	#pragma omp parallel for
+	for (int i = 0; i < thr_num1; i++)
 	{
-		thrds1[i]=thread([&](const Mat& fir,const Mat& sec,pair<vector<Point2f> ,vector<Point2f> >& fea)
+		const string& _fir=imgs[i];
+		const string& _sec=imgs[i+1];
+		pair<vector<Point2f> ,vector<Point2f> >& fea =features[i];
+		int index=i;
+	
+		Mat fir=imread(_fir);
+		Mat sec=imread(_sec);
+//		pair<vector<Point2f> ,vector<Point2f> >& fea=;
+		Mat src_gray;
+		cvtColor( fir, src_gray, CV_BGR2GRAY );
+		fea.first.resize(kptDet_maxCorners);
+		goodFeaturesToTrack( src_gray,
+					fea.first,
+					kptDet_maxCorners,
+					kptDet_qualityLevel,
+					kptDet_minDistance,
+					Mat(),
+					kptDet_blockSize,
+					kptDet_useHarrisDetector,
+					kptDet_k );
+
+		vector<uchar> status;
+		vector<float> err;
+		TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, kptTrack_iter, kptTrack_epsin);
+		calcOpticalFlowPyrLK(fir,sec,
+				fea.first,fea.second,status,err,
+				Size(kptTrack_winsize,kptTrack_winsize),
+				kptTrack_maxlevel, termcrit, 0, 0.001);
+
+		for(size_t ti=0;ti<status.size();++ti)
 		{
-	//		pair<vector<Point2f> ,vector<Point2f> >& fea=;
-			Mat src_gray;
-			cvtColor( fir, src_gray, CV_BGR2GRAY );
-			fea.first.resize(kptDet_maxCorners);
-			goodFeaturesToTrack( src_gray,
-					   fea.first,
-					   kptDet_maxCorners,
-					   kptDet_qualityLevel,
-					   kptDet_minDistance,
-					   Mat(),
-					   kptDet_blockSize,
-					   kptDet_useHarrisDetector,
-					   kptDet_k );
-
-			vector<uchar> status;
-			vector<float> err;
-			TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, kptTrack_iter, kptTrack_epsin);
-		    calcOpticalFlowPyrLK(fir,sec,
-				 fea.first,fea.second,status,err,
-				 Size(kptTrack_winsize,kptTrack_winsize),
-				 kptTrack_maxlevel, termcrit, 0, 0.001);
-
-			for(size_t ti=0;ti<status.size();++ti)
-			{
-				if(status[ti]!='\1')
-					fea.second[ti]=Point2f(-1.0,-1.0);
-			}
-
-		},imgs[i],imgs[i+1],ref(features[i]));
+			if(status[ti]!='\1')
+				fea.second[ti]=Point2f(-1.0,-1.0);
+		}
+		cout<<"finished "<<index<<"frames\t"<<endl;
+	
 	}
 
-	for (size_t i = 0; i < thr_num1; i++)
-	{
-		thrds1[i].join();
-	}
-
+	
 
 	size_t thr_num2=imgs.size()-2;
 
 	
-
+	cout<<"feature tracking finished"<<endl;
 
 	
-	thread* thrd2=new thread[thr_num2];
-
-	for (size_t i = 0; i < thr_num2; i++)
+	//thread* thrd2=new thread[thr_num2];
+	#pragma omp parallel for
+	for (int i = 0; i < thr_num2; i++)
 	{
-		thrd2[i]=thread([](const vector<Point2f>& fir,const vector<Point2f>& sec,map<size_t,size_t>& corr){
-			
-			vector<bool> used(sec.size(),false);
 
-			for (size_t ti = 0; ti < fir.size(); ti++)
+		//features[i].second,features[i+1].first,ref(corres[i]
+		const vector<Point2f>& fir=features[i].second;
+		const vector<Point2f>& sec=features[i+1].first;
+		map<size_t,size_t>& corr=corres[i];
+			
+		vector<bool> used(sec.size(),false);
+
+		for (size_t ti = 0; ti < fir.size(); ti++)
+		{
+			vector<double> dis;
+			dis.reserve(40);
+			vector<int> indx;
+			indx.reserve(40);
+			for (size_t tj = 0; tj < sec.size(); tj++)
 			{
-				vector<double> dis;
-				dis.reserve(40);
-				vector<int> indx;
-				indx.reserve(40);
-				for (size_t tj = 0; tj < sec.size(); tj++)
+				double tdis=abs(fir[ti].x-sec[tj].x)+abs(fir[ti].y-sec[tj].y);
+				if(tdis<pnt_dis_threshold)
 				{
-					double tdis=abs(fir[ti].x-sec[tj].x)+abs(fir[ti].y-sec[tj].y);
-					if(tdis<pnt_dis_threshold)
-					{
-						dis.push_back(tdis);
-						indx.push_back(tj);
-					}
+					dis.push_back(tdis);
+					indx.push_back(tj);
 				}
-				if(dis.size()>0)
+			}
+			if(dis.size()>0)
+			{
+				FromSmall(dis,dis.size(),indx);
+				for (size_t tk = 0; tk < dis.size(); tk++)
 				{
-					FromSmall(dis,dis.size(),indx);
-					for (size_t tk = 0; tk < dis.size(); tk++)
+					if(!used[indx[tk]])
 					{
-						if(!used[indx[tk]])
-						{
-							corr[ti]=indx[tk];
-							used[indx[tk]]=true;
-							break;
-						}
+						corr[ti]=indx[tk];
+						used[indx[tk]]=true;
+						break;
 					}
 				}
 			}
+		}
 
-		},features[i].second,features[i+1].first,ref(corres[i]));
+
 	}
 
-	for(size_t i=0;i<thr_num2;i++)
-	{
-		thrd2[i].join();
-	}
 
-	delete[] thrds1;
-	delete[] thrd2;
+	cout<<"feature corresponding finished"<<endl;
+
 
 	return pair< vector<pair<vector<Point2f> ,vector<Point2f> > >, vector<map<size_t,size_t>  > >(features,corres);
 }
 
 
-auto incrementalTrajectoryDetect(const vector<Mat>& imgs)-> vector<vector<Point2f> >
+auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Point2f> >
 {
 	assert(imgs.size()>=2);
 	
@@ -151,6 +152,7 @@ auto incrementalTrajectoryDetect(const vector<Mat>& imgs)-> vector<vector<Point2
 
 	for (size_t i = 0; i < sth.first.size()-1; i++)
 	{
+		cout<<"processing frame " <<i<<endl;
 		for (size_t j = 0; j < markers[i].size(); j++)
 		{
 			if(!markers[i][j])
@@ -191,37 +193,52 @@ auto incrementalTrajectoryDetect(const vector<Mat>& imgs)-> vector<vector<Point2
 			}
 		}
 	}
-
+	cout<<"feature tracing finished"<<endl;
 	return trajs;
 }
 
+auto effectTraj(const vector<Point2f>& inp)->vector<Point2f>
+{
+	vector<Point2f> rslt;
+	rslt.reserve(inp.size());
+
+	int in=0;
+	while((in<inp.size())&&(inp[in].x<0.01)&&(inp[in].y<0.01))
+		++in;
+	while((in<inp.size())&&(inp[in].x>0.01)&&(inp[in].y>0.01))
+	{	rslt.push_back(inp[in]);
+		++in;
+	}
+	return rslt;
+}
 
 void removeStaticTrajectories(vector<vector<Point2f> > &trajs)
 {
-
+	cout<<"remove static trjs"<<endl;
 	vector<bool> static_markers(trajs.size(),false);
 #pragma omp parallel for
 
 	for(int i=0;i<trajs.size();i++)
 	{
-		int j=0;
-		while( (trajs[i][j].x<0.01) && (trajs[i][j].y<0.01))
-			++j;
-
-		while ((j<trajs[i].size()-1)&& ((trajs[i][j+1].x>0.01) && (trajs[i][j+1].y>0.01)))
+		auto etraj=effectTraj(trajs[i]);
+		if(etraj.size()>1)
+		for (int j = 0; j < etraj.size()-1; j++)
 		{
-			double diff=abs(trajs[i][j+1].x-trajs[i][j].x)+abs(trajs[i][j+1].y-trajs[i][j].y);
-			if(diff<static_pnt_cre)
+			double tdis=abs(etraj[j+1].x-etraj[j].x)+abs(etraj[j+1].y-etraj[j].y);
+			if(tdis<static_pnt_cre)
+			{
 				static_markers[i]=true;
-			break;
+				break;
+			}
 		}
 
 	}
 
+	auto sth=trajs.begin();
 	for (size_t i = trajs.size()-1;i>=0;--i)
 	{
 		if(static_markers[i])
-			trajs.erase(trajs.begin()+i);
+			trajs.erase(sth+i);
 	}
 
 }

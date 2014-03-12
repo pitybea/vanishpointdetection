@@ -62,34 +62,20 @@ void testsimple(const Mat& fir,const Mat& sec)
 		drawPoints(copy,fea3,7);
 
 		imshow("whatever",copy);
-		waitKey();
+		imwrite("traj.jpg",copy);
+		//waitKey();
 }
-	auto sfuc(const vector<Point2f>& inp)->vector<Point2f>
-	{
-		vector<Point2f> rslt;
-		rslt.reserve(inp.size());
 
-		int in=0;
-		while(inp[in].x<0.01)
-			++in;
-		while((in<inp.size())&&(inp[in].x>0.01))
-		{	rslt.push_back(inp[in]);
-			++in;
-		}
-		return rslt;
-	}
 int main(int argc, char* argv[])
 {
-	//_chdir("E:\\SphericalVideoStabilization\\testdata");
+	_chdir("D:\\balloon data\\f1");
 
 	auto flnms=fileIOclass::InVectorString("imgs.txt");
-	vector<Mat> imgs(flnms.size());
-	for (size_t i = 0; i < flnms.size(); i++)
-	{
-		imgs[i]=imread(flnms[i]);
-	}
+//	vector<Mat> imgs(flnms.size());
 
-	auto trajs=incrementalTrajectoryDetect(imgs);
+	flnms.erase(flnms.begin()+4,flnms.end());
+	
+	auto trajs=incrementalTrajectoryDetect(flnms);
 
 	vector<bool> lbs(trajs.size(),false);
 	for (int i = 0; i < trajs.size(); i++)
@@ -98,14 +84,17 @@ int main(int argc, char* argv[])
 			lbs[i]=true;
 	}
 
-	Mat img=imgs[0];
+	Mat img=imread(flnms[0]);
+
+	removeStaticTrajectories(trajs);
 
 	vector<vector<Point2f> > effect_trajs(trajs.size());
 
-
+#pragma omp parallel for
 	for (int i = 0; i < trajs.size(); i++)
 	{
-		effect_trajs[i]=sfuc(trajs[i]);
+		cout<<i<<"\t";
+		effect_trajs[i]= effectTraj (trajs[i]);
 	}
 
 	drawTrajs_ok(img,effect_trajs);
@@ -113,7 +102,7 @@ int main(int argc, char* argv[])
 
 	FILE* fp;
 	fopen_s(&fp,"trajs.txt","w");
-	fprintf(fp,"%d %d %d %d\n",2*imgs.size(),trajs.size(),imgs[0].cols,imgs[0].rows);
+	fprintf(fp,"%d %d %d %d\n",2* flnms.size(),trajs.size(),img.cols,img.rows);
 	for (int i = 0; i < trajs[0].size(); i++)
 	{
 		for (int j = 0; j < trajs.size(); j++)
