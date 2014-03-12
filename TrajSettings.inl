@@ -12,4 +12,9 @@ namespace traj
 	const int kptTrack_winsize=21;
 	//const kptTrack_
 	const int kptTrack_maxlevel=3;
+
+
+	const double pnt_dis_threshold=5.0;
+
+	const double static_pnt_cre=6.0;
 };

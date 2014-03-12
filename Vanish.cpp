@@ -108,26 +108,6 @@ void drawABLine(Mat& img,double a,double b)
 	line(img,pt1, pt2, Scalar(255,0,0), 2, CV_AA);
 }
 
-void drawPoint(Mat& img,const Point& pt)
-{
-	int thickness = -1;
-	int lineType = 8;
-	circle( img,
-         pt,
-         4,
-         Scalar( 0, 255, 255 ),
-         thickness,
-         lineType );
-}
-
-void drawPoints(Mat& img,const vector<Point>& pts)
-{
-	
- 
-	for(const auto& pt:pts)
-		drawPoint(img,pt);
-		
-}
 
 auto skyDetect(const Mat& osrc)->vector<pair<double,double> >
 {
@@ -196,33 +176,8 @@ auto houghLine(const Mat& osrc)->vector<Vec4i>
 	return lines;
 }
 
-void drawTrajs(Mat& img,const vector<vector<Point2f> >& trjs,vector<bool> lbs=vector<bool>(0),bool showfals=true)
-{
-	for (int i = 0; i < trjs[0].size(); i++)
-	{
-		for (int j = 0; j < trjs.size()-1; j++)
-		{
-			if(lbs.size()==0)
-				line(img,trjs[j][i], trjs[j+1][i], Scalar(255,0,0), 2, CV_AA);
-			else if(showfals)
-				line(img,trjs[j][i], trjs[j+1][i], lbs[i]?Scalar(0,255,255):Scalar(255,255,0), 2, CV_AA);
-			else if(lbs[i])
-				line(img,trjs[j][i], trjs[j+1][i], Scalar(255,0,0), 2, CV_AA);
-		}
-	}
-}
 
 
-auto incrementalTrajectoryDetect(const vector<Mat>& imgs)-> vector<vector<Point2f> >
-{
-	assert(imgs.size()>=2);
-	vector<vector<Point2f> > trajs;
-
-
-
-
-	return trajs;
-}
 
 
 auto trajectoryDetect(const vector<Mat>& imgs,int index)->vector<vector<Point2f> > 
@@ -346,27 +301,7 @@ double pointToHlineDis(const Vec4i& hline,const pttype& pt)
 	return max(d3,min(d1,d2));
 	//line( src, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 1, CV_AA);
 }
-template<class T>
-static void FromSmall(vector<T>& p,int n,vector<int>& index)
-{
-	int k,j,i;
-	T t;
-	int ii;
-	k=n/2;
-	while(k>0)
-	{
-		for(j=k;j<=n-1;j++)
-		{
-			t=p[j];  ii=index[j];  i=j-k;
-			while((i>=0)&&(p[i]>t))
-			{
-				p[i+k]=p[i];  index[i+k]=index[i];  i=i-k;
-			}
-			p[i+k]=t;  index[i+k]=ii;
-		}
-		k=k/2;
-	}
-};
+
 void HlineTrajCorr(const vector<Point2f>& pts,const Vec4i& hline,vector<int>& rslt )
 {
 	vector<double> diss(pts.size());

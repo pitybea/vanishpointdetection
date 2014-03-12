@@ -3,21 +3,7 @@
 #include <map>
 #include "munkres.h"
 using namespace traj;
-void drawTrajs(Mat& img,const vector<vector<Point2f> >& trjs,vector<bool> lbs=vector<bool>(0),bool showfals=true)
-{
-	for (int i = 0; i < trjs[0].size(); i++)
-	{
-		for (int j = 0; j < trjs.size()-1; j++)
-		{
-			if(lbs.size()==0)
-				line(img,trjs[j][i], trjs[j+1][i], Scalar(255,0,0), 2, CV_AA);
-			else if(showfals)
-				line(img,trjs[j][i], trjs[j+1][i], lbs[i]?Scalar(0,255,255):Scalar(255,255,0), 2, CV_AA);
-			else if(lbs[i])
-				line(img,trjs[j][i], trjs[j+1][i], Scalar(255,0,0), 2, CV_AA);
-		}
-	}
-}
+
 
 
 
@@ -41,12 +27,13 @@ auto incrementalTrajectoryDetectCore(const vector<Mat>& imgs)-> pair<vector< pai
 
 	thread* thrds1=new thread[thr_num1];
 
-	TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, kptTrack_iter, kptTrack_epsin);
+	
 
 	for (size_t i = 0; i < thr_num1; i++)
 	{
 		thrds1[i]=thread([&](const Mat& fir,const Mat& sec,pair<vector<Point2f> ,vector<Point2f> >& fea)
 		{
+	//		pair<vector<Point2f> ,vector<Point2f> >& fea=;
 			Mat src_gray;
 			cvtColor( fir, src_gray, CV_BGR2GRAY );
 			fea.first.resize(kptDet_maxCorners);
@@ -62,7 +49,7 @@ auto incrementalTrajectoryDetectCore(const vector<Mat>& imgs)-> pair<vector< pai
 
 			vector<uchar> status;
 			vector<float> err;
-		
+			TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, kptTrack_iter, kptTrack_epsin);
 		    calcOpticalFlowPyrLK(fir,sec,
 				 fea.first,fea.second,status,err,
 				 Size(kptTrack_winsize,kptTrack_winsize),
@@ -74,7 +61,7 @@ auto incrementalTrajectoryDetectCore(const vector<Mat>& imgs)-> pair<vector< pai
 					fea.second[ti]=Point2f(-1.0,-1.0);
 			}
 
-		},imgs[i],imgs[i+1],features[i]);
+		},imgs[i],imgs[i+1],ref(features[i]));
 	}
 
 	for (size_t i = 0; i < thr_num1; i++)
@@ -86,13 +73,6 @@ auto incrementalTrajectoryDetectCore(const vector<Mat>& imgs)-> pair<vector< pai
 	size_t thr_num2=imgs.size()-2;
 
 	
-	vector<vector<vector<int> > > weights_buffer(corres.size());
-	//weights_buffer.resize();
-
-	for(size_t i=0;i<weights_buffer.size();++i)
-	{
-		weights_buffer[i].resize(features[i].second.size(),vector<int>(features[i+1].first.size()));
-	}
 
 
 	
@@ -100,62 +80,41 @@ auto incrementalTrajectoryDetectCore(const vector<Mat>& imgs)-> pair<vector< pai
 
 	for (size_t i = 0; i < thr_num2; i++)
 	{
-		thrd2[i]=thread([](const vector<Point2f>& fir,const vector<Point2f>& sec,vector<vector<int> >& buffer,map<size_t,size_t>& corr){
+		thrd2[i]=thread([](const vector<Point2f>& fir,const vector<Point2f>& sec,map<size_t,size_t>& corr){
+			
+			vector<bool> used(sec.size(),false);
+
 			for (size_t ti = 0; ti < fir.size(); ti++)
 			{
+				vector<double> dis;
+				dis.reserve(40);
+				vector<int> indx;
+				indx.reserve(40);
 				for (size_t tj = 0; tj < sec.size(); tj++)
 				{
-					buffer[ti][tj]=10*(abs(fir[ti].x-sec[tj].x)+abs(fir[ti].y-sec[tj].y));
+					double tdis=abs(fir[ti].x-sec[tj].x)+abs(fir[ti].y-sec[tj].y);
+					if(tdis<pnt_dis_threshold)
+					{
+						dis.push_back(tdis);
+						indx.push_back(tj);
+					}
+				}
+				if(dis.size()>0)
+				{
+					FromSmall(dis,dis.size(),indx);
+					for (size_t tk = 0; tk < dis.size(); tk++)
+					{
+						if(!used[indx[tk]])
+						{
+							corr[ti]=indx[tk];
+							used[indx[tk]]=true;
+							break;
+						}
+					}
 				}
 			}
 
-
-			munkres test;
-			test.set_diag(false);
-			auto& x=buffer;
-			test.load_weights(x);
-			int cost;
-			bool inverse;
-
-		   int num_rows,num_columns;// = std::min(x.size(), x[0].size()), num_columns = std::max(x.size(), x[0].size());
-
-		   if(fir.size()<sec.size())
-		   {
-			   inverse=false;
-			   num_rows=fir.size();
-			   num_columns=sec.size();
-		   }
-		   else
-		   {
-			   inverse=true;
-			   num_rows=sec.size();
-			   num_columns=fir.size();
-		   }
-
-			ordered_pair *p = new ordered_pair[num_rows];
-			cost = test.assign(p);
-	
-			//corr.resize(num_rows);
-			//output size of the matrix and list of matched vertices
-			std::cerr << "The ordered pairs are \n";
-			for (int i = 0; i < num_rows; i++)
-			{
-				if(!inverse)
-				{
-					corr[p[i].row]=p[i].col;
-				}
-				else
-				{
-					corr[p[i].col]=p[i].row;
-
-				}
-//				std::cerr << "(" << p[i].row << ", " << p[i].col << ")" << std::endl;
-			}
-//			std::cerr << "The total cost of this assignment is " << cost << std::endl;
-//			std::cerr << "Dimensions: (" << num_rows << ", " << num_columns << ")" << std::endl;
-
-
-		},features[i].second,features[i+1].first,weights_buffer[i],corres[i]);
+		},features[i].second,features[i+1].first,ref(corres[i]));
 	}
 
 	for(size_t i=0;i<thr_num2;i++)
@@ -198,11 +157,17 @@ auto incrementalTrajectoryDetect(const vector<Mat>& imgs)-> vector<vector<Point2
 			{
 				vector<Point2f> traj;
 				traj.reserve(imgs.size());
+				if(i!=0)
+					for (int k = 0; k < i; ++k)
+					{
+						traj.push_back(Point2f(0.0,0.0));
+					}
 				traj.push_back(sth.first[i].first[j]);
 				markers[i][j]=true;
 				Point2f& cur_p=sth.first[i].second[j];
 				int cur_frame=i;
 				int cur_index=j;
+				int effec_num=1;
 				while((cur_frame<sth.first.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0)&&(sth.second[cur_frame].count(cur_index)))
 				{
 					traj.push_back(sth.first[cur_frame+1].first[sth.second[cur_frame][cur_index]]);
@@ -210,17 +175,55 @@ auto incrementalTrajectoryDetect(const vector<Mat>& imgs)-> vector<vector<Point2
 					cur_p=sth.first[cur_frame+1].second[sth.second[cur_frame][cur_index]];
 					cur_index=sth.second[cur_frame][cur_index];
 					++cur_frame;
+					++effec_num;
 				}
 				
 				if(cur_frame==(sth.first.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0))
 					traj.push_back(cur_p);
+				if(effec_num>1)
+				while (traj.size()<imgs.size())
+				{
+					traj.push_back(Point2f(0.0,0.0));
+				}
 
-				trajs.push_back(traj);
+				if(effec_num>1)
+					trajs.push_back(traj);
 			}
 		}
 	}
 
 	return trajs;
+}
+
+
+void removeStaticTrajectories(vector<vector<Point2f> > &trajs)
+{
+
+	vector<bool> static_markers(trajs.size(),false);
+#pragma omp parallel for
+
+	for(int i=0;i<trajs.size();i++)
+	{
+		int j=0;
+		while( (trajs[i][j].x<0.01) && (trajs[i][j].y<0.01))
+			++j;
+
+		while ((j<trajs[i].size()-1)&& ((trajs[i][j+1].x>0.01) && (trajs[i][j+1].y>0.01)))
+		{
+			double diff=abs(trajs[i][j+1].x-trajs[i][j].x)+abs(trajs[i][j+1].y-trajs[i][j].y);
+			if(diff<static_pnt_cre)
+				static_markers[i]=true;
+			break;
+		}
+
+	}
+
+	for (size_t i = trajs.size()-1;i>=0;--i)
+	{
+		if(static_markers[i])
+			trajs.erase(trajs.begin()+i);
+	}
+
 }
 
 
