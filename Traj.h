@@ -4,6 +4,8 @@
 //#include <cv.h>
 #include "utils.h"
 #include "TrajSettings.inl"
+
+#include "parallelSetting.inl"
 //using namespace vanish;
 using namespace cv; //quick and dirty
 #include <vector>
@@ -15,3 +17,15 @@ void removeStaticTrajectories(vector<vector<Point2f> > &trajs);
 
 
 auto effectTraj(const vector<Point2f>& inp)->vector<Point2f>;
+
+
+
+
+
+void saveTraj_BannoFormat(const char* &oup,const vector<string>& flnms,const vector<vector<Point2f> >& trajs,const Mat & img);
+
+
+void saveTraj_parallel(const string& inpf,const vector<vector<Point2f> >& trajs);
+
+
+void patchDealSave(const vector<vector<string> >& fileNames,const vector<vector<int> >& indxs,const char*  lstFileName,const char*  LogFileName,const char*);
