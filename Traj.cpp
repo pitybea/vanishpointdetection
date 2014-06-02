@@ -65,7 +65,7 @@ auto incrementalTrajectoryDetectCore(const vector<string>& imgs)-> pair<vector< 
 			if(status[ti]!='\1')
 				fea.second[ti]=Point2f(-1.0,-1.0);
 		}
-		cout<<"finished "<<index<<"frames\t"<<endl;
+		cout<<"finished frame "<<index<<"\t"<<endl;
 	
 	}
 
@@ -137,7 +137,7 @@ auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Poi
 	
 	vector<vector<Point2f> > trajs;
 
-	trajs.reserve(100000);
+	trajs.reserve(1000000);
 
 	
 	auto sth=incrementalTrajectoryDetectCore(imgs);
@@ -221,21 +221,22 @@ void removeStaticTrajectories(vector<vector<Point2f> > &trajs)
 	for(int i=0;i<trajs.size();i++)
 	{
 		auto etraj=effectTraj(trajs[i]);
+		
+		double dis=0.0;
 		if(etraj.size()>1)
-		for (int j = 0; j < etraj.size()-1; j++)
 		{
-			double tdis=abs(etraj[j+1].x-etraj[j].x)+abs(etraj[j+1].y-etraj[j].y);
-			if(tdis<static_pnt_cre)
+			for (int j = 0; j < etraj.size()-1; j++)
 			{
-				static_markers[i]=true;
-				break;
+				double tdis=abs(etraj[j+1].x-etraj[j].x)+abs(etraj[j+1].y-etraj[j].y);
+				dis+=tdis;
 			}
+			if((dis/etraj.size())<static_pnt_cre/2)
+				static_markers[i]=true;
 		}
-
 	}
 
 	auto sth=trajs.begin();
-	for (size_t i = trajs.size()-1;i>=0;--i)
+	for (int i = trajs.size()-1;i>=0;--i)
 	{
 		if(static_markers[i])
 			trajs.erase(sth+i);

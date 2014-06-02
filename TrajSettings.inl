@@ -16,5 +16,5 @@ namespace traj
 
 	const double pnt_dis_threshold=5.0;
 
-	const double static_pnt_cre=6.0;
+	const double static_pnt_cre=3.0;
 };

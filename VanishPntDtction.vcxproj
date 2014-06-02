@@ -140,6 +140,7 @@
     <ClCompile Include="Vanish.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="sfm.inl" />
     <None Include="TrajSettings.inl" />
     <None Include="Vsettings.inl" />
     <None Include="ttsetting.inl" />
