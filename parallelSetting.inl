@@ -3,5 +3,5 @@
 
 namespace parallel
 {
-	const int patch_size=20;
+	const int patch_size=1000;
 }

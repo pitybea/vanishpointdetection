@@ -7,20 +7,15 @@ using namespace traj;
 using namespace parallel;
 
 
-auto incrementalTrajectoryDetectCore(const vector<string>& imgs)-> pair<vector< pair<vector<Point2f> ,vector<Point2f> > >, vector<map<size_t,size_t>>>
+auto incrementalTrajectoryDetectCore(const vector<string>& imgs,vector<pair<vector<Point2f> ,vector<Point2f> > >& features)-> vector<map<size_t,size_t>>
 {
 	assert(imgs.size()>=2);
 
-	vector<pair<vector<Point2f> ,vector<Point2f> > > features(imgs.size()-1);
+	
 	
 	vector<map<size_t,size_t> > corres(imgs.size()-2);
-
-	for (size_t i=0;i<imgs.size()-1;++i)
-	{
-		features[i].first.reserve(kptDet_maxCorners);
-		features[i].second.reserve(kptDet_maxCorners);
-	}
-
+	
+	
 
 
 	size_t thr_num1=imgs.size()-1;
@@ -127,7 +122,7 @@ auto incrementalTrajectoryDetectCore(const vector<string>& imgs)-> pair<vector< 
 	cout<<"feature corresponding finished"<<endl;
 
 
-	return pair< vector<pair<vector<Point2f> ,vector<Point2f> > >, vector<map<size_t,size_t>  > >(features,corres);
+	return corres;
 }
 
 
@@ -140,18 +135,20 @@ auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Poi
 
 	trajs.reserve(1000000);
 
+	vector<pair<vector<Point2f> ,vector<Point2f> > > features;
+	features.resize(imgs.size()-1);
 	
-	auto sth=incrementalTrajectoryDetectCore(imgs);
+	auto sth=incrementalTrajectoryDetectCore(imgs,features);
 
-	vector<vector<bool> > markers(sth.first.size());
+	vector<vector<bool> > markers(features.size());
 	
 
-	for (size_t i = 0; i < sth.first.size(); i++)
+	for (size_t i = 0; i < features.size(); i++)
 	{
-		markers[i].resize(sth.first[i].first.size(),false);
+		markers[i].resize(features[i].first.size(),false);
 	}
 
-	for (size_t i = 0; i < sth.first.size()-1; i++)
+	for (size_t i = 0; i < features.size()-1; i++)
 	{
 		cout<<"processing frame " <<i<<endl;
 		for (size_t j = 0; j < markers[i].size(); j++)
@@ -165,23 +162,23 @@ auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Poi
 					{
 						traj.push_back(Point2f(0.0,0.0));
 					}
-				traj.push_back(sth.first[i].first[j]);
+				traj.push_back(features[i].first[j]);
 				markers[i][j]=true;
-				Point2f& cur_p=sth.first[i].second[j];
+				Point2f& cur_p=features[i].second[j];
 				int cur_frame=i;
 				int cur_index=j;
 				int effec_num=1;
-				while((cur_frame<sth.first.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0)&&(sth.second[cur_frame].count(cur_index)))
+				while((cur_frame<features.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0)&&(sth[cur_frame].count(cur_index)))
 				{
-					traj.push_back(sth.first[cur_frame+1].first[sth.second[cur_frame][cur_index]]);
-					markers[cur_frame+1][sth.second[cur_frame][cur_index]]=true;
-					cur_p=sth.first[cur_frame+1].second[sth.second[cur_frame][cur_index]];
-					cur_index=sth.second[cur_frame][cur_index];
+					traj.push_back(features[cur_frame+1].first[sth[cur_frame][cur_index]]);
+					markers[cur_frame+1][sth[cur_frame][cur_index]]=true;
+					cur_p=features[cur_frame+1].second[sth[cur_frame][cur_index]];
+					cur_index=sth[cur_frame][cur_index];
 					++cur_frame;
 					++effec_num;
 				}
 				
-				if(cur_frame==(sth.first.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0))
+				if(cur_frame==(features.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0))
 					traj.push_back(cur_p);
 				if(effec_num>1)
 				while (traj.size()<imgs.size())
@@ -199,7 +196,7 @@ auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Poi
 }
 
 
-auto incrementalTrajectoryDetect_Effect(const vector<string>& imgs)-> pair< vector<vector<Point2f> >, vector<pair<int,int> > >
+auto incrementalTrajectoryDetect_Effect(const vector<string>& imgs,vector<pair<vector<Point2f> ,vector<Point2f> > >& features)-> pair< vector<vector<Point2f> >, vector<pair<int,int> > >
 {
 	assert(imgs.size()>=2);
 	
@@ -215,17 +212,17 @@ auto incrementalTrajectoryDetect_Effect(const vector<string>& imgs)-> pair< vect
 	startEndRecords.reserve(patch_size* kptDet_maxCorners/4 );
 
 	
-	auto sth=incrementalTrajectoryDetectCore(imgs);
+	auto sth=incrementalTrajectoryDetectCore(imgs,features);
 
-	vector<vector<bool> > markers(sth.first.size());
+	vector<vector<bool> > markers(features.size());
 	
 
-	for (size_t i = 0; i < sth.first.size(); i++)
+	for (size_t i = 0; i < features.size(); i++)
 	{
-		markers[i].resize(sth.first[i].first.size(),false);
+		markers[i].resize(features[i].first.size(),false);
 	}
 
-	for (size_t i = 0; i < sth.first.size()-1; i++)
+	for (size_t i = 0; i < features.size()-1; i++)
 	{
 		cout<<"processing frame " <<i<<endl;
 		for (size_t j = 0; j < markers[i].size(); j++)
@@ -242,23 +239,23 @@ auto incrementalTrajectoryDetect_Effect(const vector<string>& imgs)-> pair< vect
 //						traj.push_back(Point2f(0.0,0.0));
 //					}
 
-				traj.push_back(sth.first[i].first[j]);
+				traj.push_back(features[i].first[j]);
 				markers[i][j]=true;
-				Point2f& cur_p=sth.first[i].second[j];
+				Point2f& cur_p=features[i].second[j];
 				int cur_frame=i;
 				int cur_index=j;
 				int effec_num=1;
-				while((cur_frame<sth.first.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0)&&(sth.second[cur_frame].count(cur_index)))
+				while((cur_frame<features.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0)&&(sth[cur_frame].count(cur_index)))
 				{
-					traj.push_back(sth.first[cur_frame+1].first[sth.second[cur_frame][cur_index]]);
-					markers[cur_frame+1][sth.second[cur_frame][cur_index]]=true;
-					cur_p=sth.first[cur_frame+1].second[sth.second[cur_frame][cur_index]];
-					cur_index=sth.second[cur_frame][cur_index];
+					traj.push_back(features[cur_frame+1].first[sth[cur_frame][cur_index]]);
+					markers[cur_frame+1][sth[cur_frame][cur_index]]=true;
+					cur_p=features[cur_frame+1].second[sth[cur_frame][cur_index]];
+					cur_index=sth[cur_frame][cur_index];
 					++cur_frame;
 					++effec_num;
 				}
 				
-				if(cur_frame==(sth.first.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0))
+				if(cur_frame==(features.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0))
 					traj.push_back(cur_p);
 
 				if(effec_num>1)
@@ -630,12 +627,27 @@ void patchDealSave(const vector<vector<string> >& fileNames,const vector<vector<
 	vector<int> okIndx;
 	vector<Point2f> lastPts;
 
+
+	vector<pair<vector<Point2f> ,vector<Point2f> > > features(fileNames[0].size()-1);
+
+	for (size_t i=0;i<fileNames[0].size()-1;++i)
+	{
+		features[i].first.reserve(kptDet_maxCorners);
+		features[i].second.reserve(kptDet_maxCorners);
+	}
+	
+
+
 	for (int i = 0; i < fileNames.size(); i++)
 	{
-		auto tst=incrementalTrajectoryDetect_Effect(fileNames[i]);
+
+		if(fileNames[i].size()<fileNames[0].size())
+			features.resize(fileNames[i].size());
+
+		auto tst=incrementalTrajectoryDetect_Effect(fileNames[i],features);
 
 
-		//index.resize(tst.first.size(),0);
+		
 		
 		
 		
@@ -644,17 +656,12 @@ void patchDealSave(const vector<vector<string> >& fileNames,const vector<vector<
 		{
 			loadIndLastPts(lstFileName,indxs[0][0],okIndx,lastPts);
 		
-		//	if(okIndx.size()==0)
-		//	for (int j = 0; j < index.size(); j++)
-		//	{
-		//		index[j]=j;
-		//	}
+		
 		}
 
-	//	if(okIndx.size()!=0)
-	//	{
+
 		setIndexsByMatching(lastPts,tst.first,tst.second,index,okIndx,fileNames[i].size(),current_maxIndx);
-	//	}
+
 		
 
 		auto sttMks=markStaticTrajectories(tst.first);
