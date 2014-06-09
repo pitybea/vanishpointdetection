@@ -124,7 +124,58 @@ auto incrementalTrajectoryDetectCore(const vector<string>& imgs,vector<pair<vect
 
 	return corres;
 }
+void simpleTrackPrint(const vector<string>& flnms, const string& flnm)
+{
+	const string& _fir=flnms[0];
+	const string& _sec=flnms[1];
+	pair<vector<Point2f> ,vector<Point2f> > fea;
+//	int index=i;
+	
+	Mat fir=imread(_fir);
+	Mat sec=imread(_sec);
+//		pair<vector<Point2f> ,vector<Point2f> >& fea=;
+	Mat src_gray;
 
+	
+	cvtColor( fir, src_gray, CV_BGR2GRAY );
+	
+	fea.first.resize(kptDet_maxCorners);
+	fea.second.resize(kptDet_maxCorners);
+
+	goodFeaturesToTrack( src_gray,
+				fea.first,
+				kptDet_maxCorners,
+				kptDet_qualityLevel,
+				kptDet_minDistance,
+				Mat(),
+				kptDet_blockSize,
+				kptDet_useHarrisDetector,
+				kptDet_k );
+
+	vector<uchar> status;
+	vector<float> err;
+	
+	TermCriteria termcrit(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, kptTrack_iter, kptTrack_epsin);
+	
+	calcOpticalFlowPyrLK(fir,sec,
+			fea.first,fea.second,status,err,
+			Size(kptTrack_winsize,kptTrack_winsize),
+			kptTrack_maxlevel, termcrit, 0, 0.001);
+
+	FILE* fp=fopen((flnm+".kpts").c_str(),"w");
+
+	for(size_t ti=0;ti<status.size();++ti)
+	{
+		if(status[ti]!='\1')
+			fea.second[ti]=Point2f(-1.0,-1.0);
+		else
+		{
+			fprintf(fp,"%d %lf %lf %lf %lf\n",ti,fea.first[ti].x,fea.first[ti].y,fea.second[ti].x,fea.second[ti].y);
+		}
+	}
+	fprintf(fp,"-1\n");
+	fclose(fp);
+}
 
 auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Point2f> >
 {

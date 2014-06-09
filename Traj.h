@@ -20,7 +20,7 @@ auto effectTraj(const vector<Point2f>& inp)->vector<Point2f>;
 
 
 
-
+void simpleTrackPrint(const vector<string>& flnms, const string& flnm);
 
 void saveTraj_BannoFormat(const char* &oup,const vector<string>& flnms,const vector<vector<Point2f> >& trajs,const Mat & img);
 

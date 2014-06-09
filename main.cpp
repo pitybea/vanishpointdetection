@@ -175,7 +175,30 @@ int main712(int argc, char* argv[])
 	return 0;
 }
 
-int main(int argc, char* argv[])
+int main(int argc,char* argv[])
+{
+	char* inp;
+#ifdef _DEBUG
+	_chdir("D:\\DATA\\seiken0502\\sf\\");
+
+	
+#endif 
+	inp="ladybug_panoramic_000000.jpg.tsk";
+	if(argc>1)
+		inp=argv[1];
+	
+	auto fls=fileIOclass::InVectorString(inp);
+
+	assert(fls.size()==2);
+
+	string s(inp);
+	simpleTrackPrint(fls,s);
+
+	cout<<s<<endl;
+	return 0;
+}
+
+int main_fort(int argc, char* argv[])
 {
 //	_chdir("D:\\DATA\\campodia_new\\fm");
 
