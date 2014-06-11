@@ -9,6 +9,7 @@
 using namespace std;
 #include <direct.h>
 #include <Windows.h>
+#include <math.h>
 #include <map>
 #include "sfm.inl"
 using namespace sfm;
@@ -173,6 +174,171 @@ int main712(int argc, char* argv[])
 	EstimateTransofrmationsimple(fln);
 
 	return 0;
+}
+
+
+
+
+double dis(const vector<double>& a,const vector<double>& b)
+{
+		assert(a.size()==b.size());
+		double sumn(0.0);
+		for (int i = 0; i < a.size(); i++)
+		{
+			double n=a[i]-b[i];
+			sumn+=n*n;
+		}
+		return std::sqrt((double)sumn);
+}
+
+vector<double> histByDiss(vector<double> diss)
+{
+	vector<double>  rslt(200,0.0);
+
+	double step=1.0/diss.size();
+
+	for (int i = 0; i < diss.size(); i++)
+	{
+		if(diss[i]<0.3047)
+			rslt[diss[i]/0.0035]+=step;
+		else
+		{
+			int pp=(diss[i]-0.3047)/0.1523;
+			if(pp>199)
+				pp=199;
+			rslt[pp]+=step;
+		}
+	}
+
+
+	return rslt;
+
+}
+
+
+int main117()
+{
+	#ifdef _DEBUG
+	_chdir("D:\\DATA\\seiken0502\\sf\\");
+#endif
+
+	auto func=[](string s1,string s2,string s3)
+	{
+		auto v1=fileIOclass::InVectorSDouble(s1);
+		auto v2=fileIOclass::InVectorSDouble(s2);
+
+		
+		FILE* fp=fopen(s3.c_str(),"w");
+		auto princ=[&](vector<double> v)
+		{
+			for(int i=0;i<v.size();i++)
+			{
+				fprintf(fp,"%d:%lf ",i+1,v[i]);
+			}
+		};
+		for (int i = 0; i < v1.size(); i++)
+		{
+			fprintf(fp,"+1 ");
+			princ(v1[i]);
+			fprintf(fp,"\n");
+		}
+		for (int i = 0; i < v2.size(); i++)
+		{
+			fprintf(fp,"-1 ");
+			princ(v2[i]);
+			fprintf(fp,"\n");
+		}
+
+		fclose(fp);
+	};
+	func("positive_train.feature","negative_train.feature","train_feature");
+	func("positive_test.feature","negative_test.feature","test_feature");
+}
+
+int main711()
+{
+#ifdef _DEBUG
+	_chdir("D:\\DATA\\seiken0502\\sf\\");
+#endif
+
+	//auto ptnlst=fileIOclass::InVectorString("positive_train.lst");
+	auto func=[&](string inp,string oup)
+	{
+		auto fnlst=fileIOclass::InVectorString(inp);
+		vector<vector<double> > features(fnlst.size());
+
+
+
+		vector<double> diss;
+		diss.reserve(4000);
+
+		#pragma omp parallel for
+		for(int i=0;i<fnlst.size();i++)
+		{
+			auto sd=inMotionFileSingle( fnlst[i]+".tsk.kpts");
+			diss.resize(sd.size());
+			for (int j = 0; j < sd.size(); j++)
+			{
+				diss[j]=dis(sd[j].first,sd[j].second);
+
+			}
+			features[i]=histByDiss(diss);
+			if(i%100==0)
+				cout<<i<<" ";
+		}
+		fileIOclass::OutVectorSDouble(oup,features);
+
+	};
+	
+//	func("positive_train.lst","positive_train.feature");
+	//func("positive_test.lst","positive_test.feature");
+	//func("negative_train.lst","negative_train.feature");
+	func("negative_test.lst","negative_test.feature");
+
+	//getchar();
+	return 0;
+}
+
+int main142(int argc,char*argv[])
+{
+#ifdef _DEBUG
+	_chdir("D:\\DATA\\seiken0502\\sf\\");
+#endif
+
+	auto allst=fileIOclass::InVectorString("allimg.lst");
+	auto sel=fileIOclass::InVectorString("selFrm.lst");
+
+	map<string,int> pos;
+	for(auto& s:sel)
+		pos[s]=1;
+
+	vector<string> psamples;
+	vector<string> nsamples;
+	for (int i = 0; i < 10000; i++)
+	{
+		if(pos.count(allst[i]))
+			psamples.push_back(allst[i]);
+		else
+			nsamples.push_back(allst[i]);
+	}
+	fileIOclass::OutVectorString("positive_train.lst",psamples);
+	fileIOclass::OutVectorString("negative_train.lst",nsamples);
+
+	psamples.clear();
+	nsamples.clear();
+
+	for (int i = 10000; i < allst.size()-1; i++)
+	{
+		if(pos.count(allst[i]))
+			psamples.push_back(allst[i]);
+		else
+			nsamples.push_back(allst[i]);
+	}
+	fileIOclass::OutVectorString("positive_test.lst",psamples);
+	fileIOclass::OutVectorString("negative_test.lst",nsamples);
+
+	return 0;
+
 }
 
 int main(int argc,char* argv[])
