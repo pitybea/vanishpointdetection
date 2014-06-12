@@ -93,6 +93,37 @@ vector<double> estimateMotion(const vector<pair<vector<double>,vector<double> > 
 };
 
 
+void EstimateTransofrmationsimple(const vector<string>& flns)
+{
+
+	vector<vector<double> > trans(flns.size());
+
+	#pragma omp parallel for
+	for (int i = 0; i < flns.size(); i++)
+	{
+		cout<<flns[i]<<" ";
+		auto sth=inMotionFileSingle(flns[i]);
+		trans[i]=estimateMotion(sth);
+	}
+
+	for (int i = 1; i < trans.size(); i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			trans[i][j]+=trans[i-1][j];
+		}
+	}
+	FILE* fp;
+	fopen_s(&fp,"trans.txt","w");
+	fprintf(fp,"0.0 0.0 0.0\n");
+	for (int i = 0; i < trans.size(); i++)
+	{
+
+		fprintf(fp,"%lf %lf %lf\n",trans[i][0],trans[i][1],trans[i][2]);
+	}
+	fclose(fp);
+}
+
 void EstimateTransofrmationsimple(const string& fln)
 {
 	FILE* fp;

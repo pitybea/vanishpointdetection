@@ -157,13 +157,13 @@ vector<string> compareAndCalRest(const vector<string>& vs1,const vector<string>&
 
 
 
-int main712(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
 	//_chdir("D:\\DATA\\campodia_new\\sfm");
-
+	_chdir("D:\\DATA\\CambodiaWall\\lady\\NE\\sf\\");
 	char* inp,*oup;
-	inp="allimg.lst";
-	oup="trajs.txt";
+	inp="task.lst";
+	//oup="trajs.txt";
 
 	if(argc>1)
 	{
@@ -171,7 +171,15 @@ int main712(int argc, char* argv[])
 		oup=argv[2];
 	}
 	string fln(inp);
-	EstimateTransofrmationsimple(fln);
+
+	auto flns=fileIOclass::InVectorString(fln);
+
+	for (int i = 0; i < flns.size(); i++)
+	{
+		flns[i]=flns[i]+".kpts";
+	}
+
+	EstimateTransofrmationsimple(flns);
 
 	return 0;
 }
@@ -253,6 +261,7 @@ int main117()
 	};
 	func("positive_train.feature","negative_train.feature","train_feature");
 	func("positive_test.feature","negative_test.feature","test_feature");
+	return 0;
 }
 
 int main711()
@@ -341,7 +350,7 @@ int main142(int argc,char*argv[])
 
 }
 
-int main(int argc,char* argv[])
+int main888(int argc,char* argv[])
 {
 	char* inp;
 #ifdef _DEBUG
