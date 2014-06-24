@@ -101,6 +101,7 @@ void EstimateTransofrmationsimple(const vector<string>& flns)
 	#pragma omp parallel for
 	for (int i = 0; i < flns.size(); i++)
 	{
+		if(i%100==0)
 		cout<<flns[i]<<" ";
 		auto sth=inMotionFileSingle(flns[i]);
 		trans[i]=estimateMotion(sth);

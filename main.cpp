@@ -160,7 +160,7 @@ vector<string> compareAndCalRest(const vector<string>& vs1,const vector<string>&
 int main(int argc, char* argv[])
 {
 	//_chdir("D:\\DATA\\campodia_new\\sfm");
-	_chdir("D:\\DATA\\CambodiaWall\\lady\\NE\\sf\\");
+	_chdir("D:\\DATA\\seiken0502\\mlg\\");
 	char* inp,*oup;
 	inp="task.lst";
 	//oup="trajs.txt";
