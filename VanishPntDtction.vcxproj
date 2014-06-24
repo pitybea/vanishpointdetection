@@ -155,6 +155,7 @@
     <ClInclude Include="hog.h" />
     <ClInclude Include="motionEstimate.h" />
     <ClInclude Include="munkres.h" />
+    <ClInclude Include="simulation.h" />
     <ClInclude Include="trainTest.h" />
     <ClInclude Include="Traj.h" />
     <ClInclude Include="utils.h" />
