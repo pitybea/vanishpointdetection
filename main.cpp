@@ -1,4 +1,4 @@
-#include <Windows.h>
+﻿#include <Windows.h>
 #include <direct.h>
 #include <vector>
 #include <stdio.h>
@@ -11,6 +11,7 @@ using namespace std;
 #include <Windows.h>
 #include <math.h>
 #include <map>
+#include "simulation.h"
 #include "sfm.inl"
 using namespace sfm;
 
@@ -153,11 +154,236 @@ vector<string> compareAndCalRest(const vector<string>& vs1,const vector<string>&
 	return rslt;
 }
 
+vector<double> motionEstimate(vector<vector<double> >& p1,vector<vector<double> >& p2,vector<double>& dis )
+{
+	if(dis.size()==0)
+		dis.resize(p1.size(),300.0);
 
 
+	//double para[4][4];
+	vector<vector<double> > para(3,vector<double>(4,0.0));
+	for (int i = 0; i < p1.size(); ++i)
+	{
+		double a,b,c;
+		double x,y,z;
+		a=p1[i][0];b=p1[i][1];c=p1[i][2];
+		x=p2[i][0];y=p2[i][1];z=p2[i][2];
+		double d=a*x+b*y+c*z;
+
+		double xtt[3]={x-d*a,y-d*b,z-d*c};
+		x=xtt[0];y=xtt[1];z=xtt[2];
+		x*=dis[i];y*=dis[i];z*=dis[i];
+		//2*r + 2*x - 4*a^2*r + 2*a^4*r - 2*a^2*x + 2*a^2*b^2*r + 2*a^2*c^2*r - 4*a*b*s - 4*a*c*t - 2*a*b*y - 2*a*c*z + 2*a*b^3*s + 2*a^3*b*s + 2*a*c^3*t + 2*a^3*c*t + 2*a*b*c^2*s + 2*a*b^2*c*t
+		//2*s + 2*y - 4*b^2*s + 2*b^4*s - 2*b^2*y + 2*a^2*b^2*s + 2*b^2*c^2*s - 4*a*b*r - 4*b*c*t - 2*a*b*x - 2*b*c*z + 2*a*b^3*r + 2*a^3*b*r + 2*b*c^3*t + 2*b^3*c*t + 2*a*b*c^2*r + 2*a^2*b*c*t
+		//2*t + 2*z - 4*c^2*t + 2*c^4*t - 2*c^2*z + 2*a^2*c^2*t + 2*b^2*c^2*t - 4*a*c*r - 4*b*c*s - 2*a*c*x - 2*b*c*y + 2*a*c^3*r + 2*a^3*c*r + 2*b*c^3*s + 2*b^3*c*s + 2*a*b^2*c*r + 2*a^2*b*c*s
+ 
+		para[0][0]+= 2 - 4*a*a   + 2*a*a*b*b  + 2*a*a*c*c  + 2*a*a*a*a ;
+		para[0][1]+= 0 -4*a*b + 2*a*b*b*b + 2*a*a*a*b + 2*a*b*c*c;
+		para[0][2]+= 0 -4*a*c + 2*a*c*c*c + 2*a*a*a*c + 2*a*b*b*c ;
+		para[0][3]+= 2*x  - 2*a*a*x  - 2*a*b*y - 2*a*c*z;
+
+		para[1][0]+= 0 -4*a*b  + 2*a*b*b*b + 2*a*a*a*b + 2*a*b*c*c*c ;
+		para[1][1]+= 2 - 4*b*b + 2*b*b*b*b + 2*a*a*b*b + 2*b*b*c*c ;
+		para[1][2]+= 0 -4*b*c + 2*b*c*c*c + 2*b*b*b*c + 2*a*a*b*c;
+		para[1][3]+= 2*y - 2*b*b*y  - 2*a*b*x - 2*b*c*z;
+
+		para[2][0]+= 0 - 4*a*c + 2*a*c*c*c  + 2*a*a*a*c + 2*a*b*b*c ;
+		para[2][1]+= 0 - 4*b*c + 2*b*c*c*c + 2*b*b*b*c + 2*a*a*b*c;
+		para[2][2]+= 2 - 4*c*c  + 2*c*c*c*c + 2*a*a*c*c + 2*b*b*c*c;
+		para[2][3]+= 2*z - 2*c*c*z  - 2*a*c*x - 2*b*c*y ;
 
 
-int main(int argc, char* argv[])
+	}
+
+	double a,b,c,d,e,f,g,h,i,j,k,l;
+	a=para[0][0];
+	b=para[0][1];
+	c=para[0][2];
+	d=para[0][3];
+	
+	e=para[1][0];
+	f=para[1][1];
+	g=para[1][2];
+	h=para[1][3];
+
+	i=para[2][0];
+	j=para[2][1];
+	k=para[2][2];
+	l=para[2][3];
+	double mx,my,mz;
+
+	mx=-(b*g*l - b*h*k - c*f*l + c*h*j + d*f*k - d*g*j)/(a*f*k - a*g*j - b*e*k + b*g*i + c*e*j - c*f*i);
+	my=(a*g*l - a*h*k - c*e*l + c*h*i + d*e*k - d*g*i)/(a*f*k - a*g*j - b*e*k + b*g*i + c*e*j - c*f*i);
+	mz=-(a*f*l - a*h*j - b*e*l + b*h*i + d*e*j - d*f*i)/(a*f*k - a*g*j - b*e*k + b*g*i + c*e*j - c*f*i);
+ 
+	vector<double> rslt(3,0.0);
+
+	rslt[0]=mx;
+	rslt[1]=my;
+	rslt[2]=mz;
+
+	for (int i = 0; i < p1.size(); i++)
+	{
+		double a,b,c;
+		double x,y,z;
+		a=p1[i][0];b=p1[i][1];c=p1[i][2];
+		x=p2[i][0];y=p2[i][1];z=p2[i][2];
+		double d=a*x+b*y+c*z;
+
+		double xtt[3]={x-d*a,y-d*b,z-d*c};
+		
+		x=rslt[0];y=rslt[1];z=rslt[2];
+		d=a*x+b*y+c*z;
+
+		double ytt[3]={x-d*a,y-d*b,z-d*c};
+		dis[i]=sqrt(ytt[0]*ytt[0]+ytt[1]*ytt[1]+ytt[2]*ytt[2]) / sqrt(xtt[0]*xtt[0]+xtt[1]*xtt[1]+xtt[2]*xtt[2]);
+
+		
+	}
+
+
+	return rslt;
+}
+int main()
+{
+	_chdir("D:\\Wang\\incrementalTracking\\x64\\Release");
+
+	vector<vector<double> > p1,p2;
+
+	FILE* fp;
+	fp=fopen("p1.txt","r");
+	int n;
+	fscanf(fp,"%d\n",&n);
+	p1.resize(n,vector<double>(3,0.0));
+
+	for (int i = 0; i < n; i++)
+	{
+		fscanf(fp,"%lf %lf %lf\n",&p1[i][0],&p1[i][1],&p1[i][2]);
+	}
+
+	fclose(fp);
+
+	fp=fopen("p2.txt","r");
+	fscanf(fp,"%d\n",&n);
+	p2.resize(n,vector<double>(3,0.0));
+	for (int i = 0; i < n; i++)
+	{
+		fscanf(fp,"%lf %lf %lf\n",&p2[i][0],&p2[i][1],&p2[i][2]);
+	}
+	
+	fclose( fp);
+
+	vector<double> rmotion(3,0.0);
+	rmotion[0]=0.342077;
+	rmotion[1]= 0.498291;
+	rmotion[2]= 0.378039;
+	vector<double> rdis(1000,0.0);
+	fp=fopen("pnt.txt","r");
+	for (int i = 0; i < 1000; i++)
+	{
+		double tx,ty,tz;
+		fscanf(fp,"%lf %lf %lf\n",&tx,&ty,&tz);
+		rdis[i]=sqrt(tx*tx+ty*ty+tz*tz);
+	}
+	fclose(fp);
+
+	vector<double> dis;
+
+
+	FILE* ft1,* ft2;
+
+	ft1=fopen("ddd.txt","w");
+	ft2=fopen("ddb.txt","w");
+	for (int i = 0; i < 2000; i++)
+	{
+		auto mot= motionEstimate (p1,p2,dis);
+		double a=mot[0]-rmotion[0];
+		double b=mot[1]-rmotion[1];
+		double c=mot[2]-rmotion[2];
+
+		fprintf(ft1,"%lf\n",sqrt(a*a+b*b+c*c));
+		double sum=0.0;
+		for (int j = 0; j < 1000; j++)
+		{
+			sum+=abs(dis[j]-rdis[j]);
+		}
+		sum/=1000;
+		fprintf(ft2,"%lf\n",sum);
+		
+	}
+
+	fclose(ft1);
+	fclose(ft2);
+
+	return 0;
+}
+
+int main——()
+{
+	int pntnum=1000;
+	int step=400;
+	auto& w=genSomeData(200.0,400.0,0.3,0.6,pntnum,step);
+
+	FILE* fp=fopen("sdata.txt","w");
+
+	fprintf(fp,"%d %d\n",step,pntnum);
+
+	//positions,points,observisions
+	FILE* ft=fopen("pos.txt","w");
+
+	auto& p=get<0>(w);
+	for (int i = 0; i < p.size(); i++)
+	{
+		fprintf(fp,"%lf %lf %lf ",p[i][0],p[i][1],p[i][2]);
+		fprintf(ft,"%lf %lf %lf\n",p[i][0],p[i][1],p[i][2]);
+
+	}
+
+	fclose(ft);
+	ft=fopen("pnt.txt","w");
+	fprintf(fp,"\n");
+
+	auto& q=get<1>(w);
+	for (int i = 0; i < q.size(); i++)
+	{
+		fprintf(fp,"%lf %lf %lf ",q[i][0],q[i][1],q[i][2]);
+		fprintf(ft,"%lf %lf %lf\n",q[i][0],q[i][1],q[i][2]);
+	}
+	fprintf(fp,"\n");
+
+	fclose(ft);
+	auto& r=get<2>(w);
+	for (int i = 0; i < r.size(); i++)
+	{
+		auto &s=r[i];
+
+		if(i==0)
+			ft=fopen("p1.txt","w");
+
+		if(i==1)
+			ft=fopen("p2.txt","w");
+
+		if(i==1 || i==0)
+			fprintf(ft,"%d\n",s.size());
+
+		for(auto& t:s)
+		{
+			fprintf(fp,"%lf %lf %lf ",t[0],t[1],t[2]);
+			if(i==1 || i==0)
+				fprintf(ft,"%lf %lf %lf\n",t[0],t[1],t[2]);
+		
+		}
+		if(i==1 || i==0)
+			fclose(ft);
+	}
+
+	fclose(fp);
+
+	return 0;
+};
+
+
+int main886(int argc, char* argv[])
 {
 	//_chdir("D:\\DATA\\campodia_new\\sfm");
 	_chdir("D:\\DATA\\seiken0502\\mlg\\");
