@@ -11,6 +11,7 @@ using namespace std;
 #include <Windows.h>
 #include <math.h>
 #include <map>
+#include <math.h>
 #include "simulation.h"
 #include "sfm.inl"
 using namespace sfm;
@@ -172,9 +173,9 @@ vector<double> motionEstimate(vector<vector<double> >& p1,vector<vector<double> 
 		double xtt[3]={x-d*a,y-d*b,z-d*c};
 		x=xtt[0];y=xtt[1];z=xtt[2];
 		x*=dis[i];y*=dis[i];z*=dis[i];
-		//2*r + 2*x - 4*a^2*r + 2*a^4*r - 2*a^2*x + 2*a^2*b^2*r + 2*a^2*c^2*r - 4*a*b*s - 4*a*c*t - 2*a*b*y - 2*a*c*z + 2*a*b^3*s + 2*a^3*b*s + 2*a*c^3*t + 2*a^3*c*t + 2*a*b*c^2*s + 2*a*b^2*c*t
-		//2*s + 2*y - 4*b^2*s + 2*b^4*s - 2*b^2*y + 2*a^2*b^2*s + 2*b^2*c^2*s - 4*a*b*r - 4*b*c*t - 2*a*b*x - 2*b*c*z + 2*a*b^3*r + 2*a^3*b*r + 2*b*c^3*t + 2*b^3*c*t + 2*a*b*c^2*r + 2*a^2*b*c*t
-		//2*t + 2*z - 4*c^2*t + 2*c^4*t - 2*c^2*z + 2*a^2*c^2*t + 2*b^2*c^2*t - 4*a*c*r - 4*b*c*s - 2*a*c*x - 2*b*c*y + 2*a*c^3*r + 2*a^3*c*r + 2*b*c^3*s + 2*b^3*c*s + 2*a*b^2*c*r + 2*a^2*b*c*s
+		//2*r + 2*x - 4*a*a*r + 2*a*a*a*a*r - 2*a*a*x + 2*a*a*b*b*r + 2*a*a*c*c*r - 4*a*b*s - 4*a*c*t - 2*a*b*y - 2*a*c*z + 2*a*b*b*b*s + 2*a*a*a*b*s + 2*a*c*c*c*t + 2*a*a*a*c*t + 2*a*b*c*c*s + 2*a*b*b*c*t
+		//2*s + 2*y - 4*b*b*s + 2*b*b*b*b*s - 2*b*b*y + 2*a*a*b*b*s + 2*b*b*c*c*s - 4*a*b*r - 4*b*c*t - 2*a*b*x - 2*b*c*z + 2*a*b*b*b*r + 2*a*a*a*b*r + 2*b*c*c*c*t + 2*b*b*b*c*t + 2*a*b*c*c*r + 2*a*a*b*c*t
+		//2*t + 2*z - 4*c*c*t + 2*c*c*c*c*t - 2*c*c*z + 2*a*a*c*c*t + 2*b*b*c*c*t - 4*a*c*r - 4*b*c*s - 2*a*c*x - 2*b*c*y + 2*a*c*c*c*r + 2*a*a*a*c*r + 2*b*c*c*c*s + 2*b*b*b*c*s + 2*a*b*b*c*r + 2*a*a*b*c*s
  
 		para[0][0]+= 2 - 4*a*a   + 2*a*a*b*b  + 2*a*a*c*c  + 2*a*a*a*a ;
 		para[0][1]+= 0 -4*a*b + 2*a*b*b*b + 2*a*a*a*b + 2*a*b*c*c;
@@ -245,10 +246,102 @@ vector<double> motionEstimate(vector<vector<double> >& p1,vector<vector<double> 
 }
 
 
+vector<double> motionEstimate2(vector<vector<double> >& p1,vector<vector<double> >& p2,vector<double>& dis )
+{
+
+
+	vector<vector<double> > para(3,vector<double>(4,0.0));
+	for (int i = 0; i < p1.size(); i++)
+	{
+		double x,y,z,a,b,c;
+
+		a=p1[i][0];b=p1[i][1];c=p1[i][2];
+		x=p2[i][0];y=p2[i][1];z=p2[i][2];
+		double d=a*x+b*y+c*z;
+
+		double xt[3]={x-d*a,y-d*b,z-d*c};
+
+		double L=dis[i];
+		x=xt[0]*L;y=xt[1]*L;z=xt[2]*L;
+
+		
+
+		para[0][0]+=  (2.0  - (4.0*a*a)  + (2.0*a*a*a*a)  + (2.0*a*a*b*b)  + (2.0*a*a*c*c));
+		para[0][1]+=( (2.0*a*b*b*b)  + (2.0*a*a*a*b)  - (4.0*a*b)  + (2.0*a*b*c*c)  ) ;
+		para[0][2]+=((2.0*a*c*c*c)  + (2.0*a*a*a*c)  - (4.0*a*c)  + (2.0*a*b*b*c)  );
+		para[0][3]+=((2.0*x)  - (2.0*a*a*x)  - (2.0*a*b*y)  - (2.0*a*c*z)  );
+
+		para[1][0]+=((2.0*a*b*b*b)  + (2.0*a*a*a*b)  - (4.0*a*b)  + (2.0*a*b*c*c) );
+		para[1][1]+=(2.0  - (4.0*b*b)  + (2.0*b*b*b*b)  + (2.0*a*a*b*b)  + (2.0*b*b*c*c) );
+		para[1][2]+=((2.0*b*c*c*c)  + (2.0*b*b*b*c)  - (4.0*b*c)  + (2.0*a*a*b*c) );
+		para[1][3]+=((2.0*y)  - (2.0*b*b*y)  - (2.0*a*b*x)  - (2.0*b*c*z) );
+
+		para[2][0]+=((2.0*a*c*c*c)  + (2.0*a*a*a*c)  - (4.0*a*c)  + (2.0*a*b*b*c) );
+		para[2][1]+=((2.0*b*c*c*c)  + (2.0*b*b*b*c)  - (4.0*b*c)  + (2.0*a*a*b*c) );
+		para[2][2]+=(2.0  - (4.0*c*c)  + (2.0*c*c*c*c)  + (2.0*a*a*c*c)  + (2.0*b*b*c*c) );
+		para[2][3]+=((2.0*z)  - (2.0*c*c*z)  - (2.0*a*c*x)  - (2.0*b*c*y) );
+
+
+	}
+
+	double a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34;
+	a11=para[0][0];
+	a12=para[0][1];
+	a13=para[0][2];
+	a14=para[0][3];
+
+	a21=para[1][0];
+	a22=para[1][1];
+	a23=para[1][2];
+	a24=para[1][3];
+
+	a31=para[2][0];
+	a32=para[2][1];
+	a33=para[2][2];
+	a34=para[2][3];
+
+	double w1,w2,w3;
+	w1 = -(a12*a23*a34 - a12*a24*a33 - a13*a22*a34 + a13*a24*a32 + a14*a22*a33 - a14*a23*a32)/(a11*a22*a33 - a11*a23*a32 - a12*a21*a33 + a12*a23*a31 + a13*a21*a32 - a13*a22*a31);
+ 
+	w2=(a11*a23*a34 - a11*a24*a33 - a13*a21*a34 + a13*a24*a31 + a14*a21*a33 - a14*a23*a31)/(a11*a22*a33 - a11*a23*a32 - a12*a21*a33 + a12*a23*a31 + a13*a21*a32 - a13*a22*a31);
+
+	w3=-(a11*a22*a34 - a11*a24*a32 - a12*a21*a34 + a12*a24*a31 + a14*a21*a32 - a14*a22*a31)/(a11*a22*a33 - a11*a23*a32 - a12*a21*a33 + a12*a23*a31 + a13*a21*a32 - a13*a22*a31);
+ 
+	vector<double> rslt(3,0.0);
+
+	rslt[0]=w1;
+	rslt[1]=w2;
+	rslt[2]=w3;
+
+	for (int i = 0; i < p1.size(); i++)
+	{
+		double a,b,c;
+		double x,y,z;
+		a=p1[i][0];b=p1[i][1];c=p1[i][2];
+		x=p2[i][0];y=p2[i][1];z=p2[i][2];
+		double d=a*x+b*y+c*z;
+
+		double xtt[3]={x-d*a,y-d*b,z-d*c};
+		
+		x=rslt[0];y=rslt[1];z=rslt[2];
+		d=a*x+b*y+c*z;
+
+		double ytt[3]={x-d*a,y-d*b,z-d*c};
+		dis[i]=sqrt(ytt[0]*ytt[0]+ytt[1]*ytt[1]+ytt[2]*ytt[2]) / sqrt(xtt[0]*xtt[0]+xtt[1]*xtt[1]+xtt[2]*xtt[2]);
+
+		
+	}
+
+
+	return rslt;
+
+
+}
+
 
 int main()
 {
-	//_chdir("D:\\Wang\\incrementalTracking\\x64\\Release");
+	_chdir("D:\\Wang\\incrementalTracking\\x64\\Release");
 
 	vector<vector<double> > p1,p2;
 
@@ -295,9 +388,9 @@ int main()
 	FILE* ft1,* ft2;
 
 	ft1=fopen("distanceError.txt","w");
-	ft2=fopen("estimateError","w");
+	ft2=fopen("estimateError.txt","w");
 	double sum=500.0;
-	while(sum>0.5)
+	for (int i = 0; i < 1000; i++)
 	{
 		auto mot= motionEstimate (p1,p2,dis);
 		double a=mot[0]-rmotion[0];
