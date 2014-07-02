@@ -156,8 +156,7 @@ vector<string> compareAndCalRest(const vector<string>& vs1,const vector<string>&
 
 vector<double> motionEstimate(vector<vector<double> >& p1,vector<vector<double> >& p2,vector<double>& dis )
 {
-	if(dis.size()==0)
-		dis.resize(p1.size(),300.0);
+	
 
 
 	//double para[4][4];
@@ -244,9 +243,12 @@ vector<double> motionEstimate(vector<vector<double> >& p1,vector<vector<double> 
 
 	return rslt;
 }
+
+
+
 int main()
 {
-	_chdir("D:\\Wang\\incrementalTracking\\x64\\Release");
+	//_chdir("D:\\Wang\\incrementalTracking\\x64\\Release");
 
 	vector<vector<double> > p1,p2;
 
@@ -287,28 +289,29 @@ int main()
 	}
 	fclose(fp);
 
-	vector<double> dis;
+	vector<double> dis(p1.size(),300.0);
 
 
 	FILE* ft1,* ft2;
 
-	ft1=fopen("ddd.txt","w");
-	ft2=fopen("ddb.txt","w");
-	for (int i = 0; i < 2000; i++)
+	ft1=fopen("distanceError.txt","w");
+	ft2=fopen("estimateError","w");
+	double sum=500.0;
+	while(sum>0.5)
 	{
 		auto mot= motionEstimate (p1,p2,dis);
 		double a=mot[0]-rmotion[0];
 		double b=mot[1]-rmotion[1];
 		double c=mot[2]-rmotion[2];
 
-		fprintf(ft1,"%lf\n",sqrt(a*a+b*b+c*c));
-		double sum=0.0;
+		fprintf(ft2,"%lf\n",sqrt(a*a+b*b+c*c));
+		sum=0.0;
 		for (int j = 0; j < 1000; j++)
 		{
 			sum+=abs(dis[j]-rdis[j]);
 		}
 		sum/=1000;
-		fprintf(ft2,"%lf\n",sum);
+		fprintf(ft1,"%lf\n",sum);
 		
 	}
 
