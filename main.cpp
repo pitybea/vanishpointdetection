@@ -1056,7 +1056,7 @@ int mainShit()
 	return 1;
 }
 
-int main(int argc, char* argv[])
+int main9(int argc, char* argv[])
 {
 	_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
 

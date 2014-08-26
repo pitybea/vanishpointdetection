@@ -7,14 +7,14 @@ using namespace cv;
 void drawTrajs(Mat& img,const vector<vector<Point2f> >& trjs,vector<bool> lbs=vector<bool>(0),bool showfals=true);
 void drawTrajs_ok(Mat& img,const vector<vector<Point2f> >& trjs,vector<bool> lbs=vector<bool>(0),bool showfals=true);
 template<class PtType>
-void drawPoint(Mat& img,const PtType& pt,int siz=4)
+void drawPoint(Mat& img,const PtType& pt,int siz=4,Scalar ss=Scalar( 0, 255, 255 ))
 {
 	int thickness = 1;
 	int lineType = 8;
 	circle( img,
          Point(pt.x,pt.y),
          siz,
-         Scalar( 0, 255, 255 ),
+         ss,
          thickness,
          lineType );
 }

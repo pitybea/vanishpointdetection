@@ -133,6 +133,7 @@
     <ClCompile Include="..\features\FeatureHistogram.cpp" />
     <ClCompile Include="..\features\FeatureWavelet.cpp" />
     <ClCompile Include="..\FileIO\FileIO.cpp" />
+    <ClCompile Include="amain.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="munkres.cpp" />
     <ClCompile Include="Source.cpp" />
