@@ -2,10 +2,10 @@
 
 
 
-vector<double> Img2Serph(double x,double y)
+vector<double> Img2Serph(double x,double y,int w=8000,int h=4000)
 {
-	double alpha= -x*2*pi/8000+2*pi;
-	double beta=  -pi*y/4000+pi/2;
+	double alpha= -x*2*pi/w+2*pi;
+	double beta=  -pi*y/h+pi/2;
 
 	vector<double> rslt(3);
 	rslt[0]=cos(beta)*cos(alpha);
@@ -98,11 +98,11 @@ void EstimateTransofrmationsimple(const vector<string>& flns)
 
 	vector<vector<double> > trans(flns.size());
 
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for (int i = 0; i < flns.size(); i++)
 	{
-		if(i%100==0)
-		cout<<flns[i]<<" ";
+		//if(i%100==0)
+		cout<<flns[i]<<endl;
 		auto sth=inMotionFileSingle(flns[i]);
 		trans[i]=estimateMotion(sth);
 	}

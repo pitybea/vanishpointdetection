@@ -9,9 +9,9 @@
 using namespace std;
 #include <direct.h>
 #include <Windows.h>
-#include <math.h>
+
 #include <map>
-#include <math.h>
+
 #include "simulation.h"
 #include "sfm.inl"
 using namespace sfm;
@@ -245,6 +245,126 @@ vector<double> motionEstimate(vector<vector<double> >& p1,vector<vector<double> 
 	return rslt;
 }
 
+double mpow(double a,int b)
+{
+	if(b==0)
+		return 1.0;
+
+	if(b==1)
+		return a;
+
+	if(b%2==0)
+	{
+		double t=mpow(a,b/2);
+		return t*t;
+	}
+	else
+	{
+		double t=mpow(a,b/2);
+		return t*t*a;
+	}
+}
+
+vector<double> motionEstimate3(vector<vector<double> >& p1,vector<vector<double> >& p2,vector<double>& dis )
+{
+	vector<vector<double> > para(3,vector<double>(4,0.0));
+	for (int i = 0; i < p1.size(); i++)
+	{
+		double x,y,z;
+		double a,b,c;
+
+
+		a=p1[i][0];b=p1[i][1];c=p1[i][2];
+		x=p2[i][0];y=p2[i][1];z=p2[i][2];
+
+		double d=a*x+b*y+c*z;
+
+		a=x-d*a;b=y-d*b;c=z-d*c;
+
+		d=a*a+b*b+c*c;
+
+
+
+		double L=dis[i];
+
+	//	pow(2.0,2);
+		para[0][0]+=1.0/(L*L)*(a*a)*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[0][1]+=1.0/(L*L)*a*b*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[0][2]+=1.0/(L*L)*a*c*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[0][3]+=(a*(a*a+b*b+c*c)*2.0)/(L*d);
+
+		para[1][0]+=1.0/(L*L)*a*b*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[1][1]+=1.0/(L*L)*(b*b)*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[1][2]+=1.0/(L*L)*b*c*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[1][3]+=(b*(a*a+b*b+c*c)*2.0)/(L*d);
+
+		para[2][0]+=1.0/(L*L)*a*c*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[2][1]+=1.0/(L*L)*b*c*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[2][2]+=1.0/(L*L)*(c*c)*1.0/(d*d)*(a*a+b*b+c*c)*2.0;
+		para[2][3]=(c*(a*a+b*b+c*c)*2.0)/(L*d);
+		
+
+		//cout<<a*a+b*b+c*c<<" "<<x*x+y*y+z*z<<endl;
+
+	}
+
+
+	double a,b,c,d,e,f,g,h,i,j,k,l;
+	a=para[0][0];
+	b=para[0][1];
+	c=para[0][2];
+	d=para[0][3];
+	
+	e=para[1][0];
+	f=para[1][1];
+	g=para[1][2];
+	h=para[1][3];
+
+	i=para[2][0];
+	j=para[2][1];
+	k=para[2][2];
+	l=para[2][3];
+	double mx,my,mz;
+
+	mx=-(b*g*l - b*h*k - c*f*l + c*h*j + d*f*k - d*g*j)/(a*f*k - a*g*j - b*e*k + b*g*i + c*e*j - c*f*i);
+
+	my=(a*g*l - a*h*k - c*e*l + c*h*i + d*e*k - d*g*i)/(a*f*k - a*g*j - b*e*k + b*g*i + c*e*j - c*f*i);
+	mz=-(a*f*l - a*h*j - b*e*l + b*h*i + d*e*j - d*f*i)/(a*f*k - a*g*j - b*e*k + b*g*i + c*e*j - c*f*i);
+ 
+	vector<double> rslt(3,0.0);
+
+	rslt[0]=mx;
+	rslt[1]=my;
+	rslt[2]=mz;
+
+	for (int i = 0; i < p1.size(); i++)
+	{
+		double x,y,z;
+		double a,b,c;
+
+
+		a=p1[i][0];b=p1[i][1];c=p1[i][2];
+		x=p2[i][0];y=p2[i][1];z=p2[i][2];
+
+		double d=a*x+b*y+c*z;
+
+		a=x-d*a;b=y-d*b;c=z-d*c;
+
+
+
+		x=rslt[0];y=rslt[1];z=rslt[2];
+		d=a*x+b*y+c*z/(a*a+b*b+c*c);
+
+		double ytt[3]={d*a,d*b,d*c};
+		dis[i]=sqrt(ytt[0]*ytt[0]+ytt[1]*ytt[1]+ytt[2]*ytt[2]) / sqrt(a*a+b*b+c*c);
+
+		
+	}
+
+
+	return rslt;
+
+}
 
 vector<double> motionEstimate2(vector<vector<double> >& p1,vector<vector<double> >& p2,vector<double>& dis )
 {
@@ -339,7 +459,7 @@ vector<double> motionEstimate2(vector<vector<double> >& p1,vector<vector<double>
 }
 
 
-int main()
+int maindis()
 {
 	_chdir("D:\\Wang\\incrementalTracking\\x64\\Release");
 
@@ -479,10 +599,132 @@ int main——()
 };
 
 
-int main886(int argc, char* argv[])
+
+
+
+int main819()
+{
+	_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
+
+	auto imgNames=fileIOclass::InVectorString("allimg.lst");
+	auto feaNames=fileIOclass::InVectorString("fsift.lst");
+	auto corrName=fileIOclass::InVectorString("match.lst");
+
+	vector<vector<pair<int,int> > > correpss;
+
+	correpss.resize(corrName.size());
+
+	for (size_t i = 0; i < correpss.size(); ++i)
+	{
+		fileIOclass::InVector(corrName[i],[](FILE* fp,pair<int,int>& w){fscanf(fp,"%d %d",&w.first,&w.second);},correpss[i]);
+	}
+	vector<vector<pair<vector<double>,vector<double> > > >  feas(feaNames.size());
+
+	for(size_t i=0;i< feas.size();++i)
+	{
+		fileIOclass::InVector(feaNames[i],[](FILE* fp,pair<vector<double>, vector<double> >& fea)
+		{
+			fea.first.resize(2);
+			fscanf(fp,"%lf %lf\n",&fea.first[0],&fea.first[1]);
+			fea.second.resize(128);
+			for (int j = 0; j < 128; j++)
+			{
+				fscanf(fp,"%lf ",&fea.second[j]);
+			}
+		},feas[i]);
+	}
+
+	auto drawsimple=[&](const string& imgn,int inde)
+	{
+		Mat img=imread(imgn,-1);
+		for(int j=max(0,inde-5);j<=inde;++j)
+		{
+			for(int k=0;k<feas[j].size();++k)
+			{
+				Point2f p(feas[j][k].first[0],feas[j][k].first[1]);
+				circle( img,
+				 p,
+				 1,
+				 Scalar(0,255,255),
+				 2,
+				 8 );
+			}
+		}
+
+		//if(inde<1) return;
+		for(int j= max(0,inde-4);j<inde && j<correpss.size() ;++j)
+		{
+			auto& w=correpss[j];
+			for(int k=0;k<w.size();++k)
+			{
+				auto& mw=w[k];
+				Point2f p1(feas[j][mw.first].first[0],feas[j][mw.first].first[1]);
+				Point2f p2(feas[j+1][mw.second].first[0],feas[j+1][mw.second].first[1]);
+				line(img,p1,p2,Scalar(255,0,0), 1, CV_AA);
+			}
+		}
+
+		imwrite("w_"+imgn,img);
+	};
+	for(size_t i=0;i<imgNames.size();++i)
+	{
+		drawsimple(imgNames[i],i);
+	}
+
+	vector<vector<Point2f> > features(feas.size());
+	vector<map<int,int> > sth(correpss.size());
+
+	for (int i = 0; i < feas.size(); i++)
+	{
+		features[i].resize(feas[i].size());
+		for (int j = 0; j < feas[i].size(); j++)
+		{
+
+			features[i][j]=Point2f(feas[i][j].first[0],feas[i][j].first[1]);
+		}
+	}
+	for(int i=0;i<correpss.size();++i)
+	{
+		for(int j=0;j<correpss[i].size();++j)
+			sth[i][correpss[i][j].first]=correpss[i][j].second;
+	}
+	auto trajs=incrementalTrajectoryDetect(features,sth);
+	
+
+	vector<bool> lbs(trajs.size(),false);
+	for (int i = 0; i < trajs.size(); i++)
+	{
+		if(trajs[i][0].x>0.1)
+			lbs[i]=true;
+	}
+
+	
+
+	removeStaticTrajectories(trajs);
+
+
+
+	
+	vector<vector<Point2f> > effect_trajs(trajs.size());
+
+#pragma omp parallel for
+	for (int i = 0; i < trajs.size(); i++)
+	{
+		cout<<i<<"\t";
+		effect_trajs[i]= effectTraj (trajs[i]);
+	}
+
+	Mat img=imread(imgNames[0],-1);
+
+	saveTraj_BannoFormat("trajj.txt",imgNames,trajs,img);
+}
+
+
+
+int main0818(int argc, char* argv[])
 {
 	//_chdir("D:\\DATA\\campodia_new\\sfm");
-	_chdir("D:\\DATA\\seiken0502\\mlg\\");
+	_chdir("D:\\DATA\\ttwoladybug\\ladybug\\2s");
 	char* inp,*oup;
 	inp="task.lst";
 	//oup="trajs.txt";
@@ -672,7 +914,7 @@ int main142(int argc,char*argv[])
 
 }
 
-int main888(int argc,char* argv[])
+int main886(int argc,char* argv[])
 {
 	char* inp;
 #ifdef _DEBUG
@@ -745,8 +987,165 @@ int main_fort(int argc, char* argv[])
 	
 }
 
+int mainShit()
+{
+	_chdir("D:\\DATA\\0717Seiken");
 
-int main623(int argc, char* argv[])
+	string fnm="Seiken_E.ptx";
+
+
+	vector<vector<vector<double> > > laser_sc_lns;
+	int pnt_per_ln,laser_lns;
+
+	FILE* fp=fopen(fnm.c_str(),"r");
+	fscanf(fp,"%d\n%d\n",&laser_lns,&pnt_per_ln);
+
+	FILE* ft;
+	ft=fopen("down.ptx","w");
+	//vector<vector<vector<double> > > down(laser_lns/4,vector<vector<double> > (pnt_per_ln/10,vector<double>(3)));
+	fprintf(ft,"%d\n%d\n",laser_lns/4,pnt_per_ln/4);
+
+	double tem;
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			fscanf(fp,"%lf ",&tem);
+			fprintf(ft,"%lf ",tem);
+			
+
+		}
+		fscanf(fp,"\n");
+		fprintf(ft,"\n");
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			fscanf(fp,"%lf ",&tem);
+			fprintf(ft,"%lf ",tem);
+		}
+		fprintf(ft,"\n");
+		fscanf(fp,"\n");
+	}
+
+	laser_sc_lns.resize(laser_lns,vector<vector<double> > (pnt_per_ln,vector<double>(3)));
+
+	int a,b,c;
+	
+
+	for (int i = 0; i < laser_lns; i++)
+	{
+		cout<<i<<"\t";
+		for (int j = 0; j < pnt_per_ln; j++)
+		{
+			fscanf(fp,"%lf %lf %lf %lf %d %d %d\n",&laser_sc_lns[i][j][0],&laser_sc_lns[i][j][1],&laser_sc_lns[i][j][2],&tem,&a,&b,&c);
+			if((i%4==0)&&(j%4==0)) 
+				fprintf(ft,"%lf %lf %lf %lf\n",laser_sc_lns[i][j][0],laser_sc_lns[i][j][1],laser_sc_lns[i][j][2],tem);
+		}
+	}
+
+
+	fclose(fp);
+
+
+	
+	fclose(ft);
+	return 1;
+}
+
+int main(int argc, char* argv[])
+{
+	_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
+
+	string s="tmat.lst";
+
+	auto fns=fileIOclass::InVectorString(s);
+
+	vector<vector<double> > po(fns.size(),vector<double>(3,0.0));
+
+	for(size_t i=0;i<fns.size();++i)
+	{
+		FILE* fp=fopen((fns[i]+".trans").c_str(),"r");
+		for(int j=0;j<3;++j)
+			fscanf(fp,"%lf ",&po[i][j]);
+		fclose(fp);
+	}
+
+	for(size_t i=1;i<po.size();++i)
+	{
+		for(int j=0;j<3;++j)
+			po[i][j]+=po[i-1][j];
+	}
+
+	for(size_t i=0;i<po.size();++i)
+	{
+		for(size_t j=0;j<3;++j)
+			cout<<po[i][j]<<" ";
+		cout<<endl;
+	}
+
+	return 0;
+}
+
+int main2152(int argc, char* argv[])
+{
+	//_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
+
+	string s("ladybug_panoramic_001820.jpg.tsk");
+
+	if(argc>1)
+		s=argv[1];
+
+	auto fnms=fileIOclass::InVectorString(s);
+	vector<vector<int> > f1,f2,match;
+	f1=fileIOclass::InVectorSInt(fnms[0]+".orb",2);
+	f2=fileIOclass::InVectorSInt(fnms[1]+".orb",2);
+	match=fileIOclass::InVectorSInt(s+".mtch",2);
+
+	vector<vector<double> > sph1,sph2;
+	sph1.resize(f1.size(),vector<double>(3));
+	sph2.resize(f2.size(),vector<double> (3));
+
+	for(size_t i=0;i<f1.size();++i)
+		sph1[i]=Img2Serph((double)f1[i][0],(double)f1[i][1],512,256);
+	for(size_t i=0;i<f2.size();++i)
+		sph2[i]=Img2Serph((double)f2[1][0],(double)f2[i][1],512,256);
+
+
+	auto func=[](vector<double> a,vector<double> b)->vector<double>
+	{
+		vector<double> rslt(9,0);
+
+		for(size_t i=0;i<3;++i)
+			for(size_t j=0;j<3;++j)
+				rslt[i*3+j]=a[i]*a[j];
+
+		return rslt;
+	};
+
+	string oun=s+".tmat";
+	FILE* fp=fopen(oun.c_str(),"w");
+	for(size_t i=0;i<match.size();++i)
+	{
+		int i1=match[i][0];
+		int i2=match[i][1];
+		auto w=func(sph1[i1],sph2[i2]);
+		for(size_t j=0;j<9;++j)
+			fprintf(fp,"%lf ",w[j]);
+		fprintf(fp,"\n");
+	}
+
+	fclose(fp);
+
+
+	return 0;
+}
+
+
+int main443(int argc, char* argv[])
 {
 //	_chdir("D:\\DATA\\campodia_new\\fm");
 
@@ -756,7 +1155,7 @@ int main623(int argc, char* argv[])
 
 
 
-
+	_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
 
 	char* inp,*oup;
 	inp="allimg.lst";
@@ -789,7 +1188,7 @@ int main623(int argc, char* argv[])
 	string fns(inp);
 	saveTraj_parallel(fns,trajs);
 
-	/*
+	
 	vector<vector<Point2f> > effect_trajs(trajs.size());
 
 #pragma omp parallel for
@@ -804,8 +1203,8 @@ int main623(int argc, char* argv[])
 	imshow("whatever",img);
 	imwrite("results.jpg",img);
 
-	saveTraj_BannoFormat(flnms,trajs,img);
-	*/
+	saveTraj_BannoFormat("trajj.txt",flnms,trajs,img);
+	
 //	waitKey();
 	//testsimple(imgs[0],imgs[1]);
 	

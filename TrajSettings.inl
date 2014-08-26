@@ -1,7 +1,7 @@
 namespace traj
 {
 
-	const int kptDet_maxCorners=4000;
+	const int kptDet_maxCorners=140;
 	const double kptDet_qualityLevel = 0.01;
 	const double kptDet_minDistance = 8;
 	const int kptDet_blockSize = 3;
