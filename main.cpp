@@ -19,7 +19,7 @@ using namespace sfm;
 using namespace traj;
 using namespace cv;
 
-
+#include <algorithm>
 #include "parallelSetting.inl"
 using namespace parallel;
 
@@ -599,16 +599,92 @@ int main——()
 };
 
 
-
-
-
-int main819()
+int main()
 {
-	_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
+	_chdir("F:\\tss");
+	auto tasks=fileIOclass::InVectorString("task.lst");
+	auto feaNames=fileIOclass::InVectorString("orb.lst");
+	auto mathces=fileIOclass::InVectorString("mtchc.lst");
+
+	vector<vector<vector<int> > > correpss(mathces.size());
+
+	for (int i = 0; i < correpss.size(); i++)
+	{
+		correpss[i]=fileIOclass::InVectorSInt(mathces[i],2);
+	}
+	
+	vector<vector<vector<int> > > feas(feaNames.size());
+
+	for (int i = 0; i < feaNames.size(); i++)
+	{
+		feas[i]=fileIOclass::InVectorSInt(feaNames[i],2);
+	}
+
+	vector<vector<Point> > features(feas.size());
+	vector<map<int,int> > sth(correpss.size());
+
+	for (int i = 0; i < feas.size(); i++)
+	{
+		features[i].resize(feas[i].size());
+		for (int j = 0; j < feas[i].size(); j++)
+		{
+
+			features[i][j]=Point(feas[i][j][0],feas[i][j][1]);
+		}
+	}
+	for(int i=0;i<correpss.size();++i)
+	{
+		for(int j=0;j<correpss[i].size();++j)
+			sth[i][correpss[i][j][0]]=correpss[i][j][1];
+	}
+	auto trajs=incrementalTrajectoryDetect(features,sth);
+
+	auto& ind=trajs.first;
+	auto& track=trajs.second;
+
+	vector<FILE*> ft(feaNames.size());
+
+	for(int i=0;i<ft.size();i++)
+		ft[i]=fopen((feaNames[i]+".gpts").c_str(),"w");
+
+	for(int i=0;i<track.size();++i)
+	{
+		for (int j = 0; j < track[i].size(); j++)
+		{
+			fprintf(ft[j+ind[i].first],"%d %d %d\n",i,track[i][j].x,track[i][j].y);
+		}
+	}
+	
+	for(int i=0;i<ft.size();i++)
+		fclose(ft[i]);
+	FILE* fp=fopen("goldenpnt.lst","w");
+	fprintf(fp,"%d\n",ind.size());
+	for(int i=0;i<ind.size();i++)
+	{
+		for(int j=ind[i].first;j<=ind[i].second;++j)
+			fprintf(fp,"%d ",j);
+
+		fprintf(fp,"\n");
+	}	
+
+
+	fclose(fp);
+
+
+	
+
+	return 0;
+}
+
+/*
+int maidfn()
+{
+	_chdir("F:\\tss");
 
 	auto imgNames=fileIOclass::InVectorString("allimg.lst");
-	auto feaNames=fileIOclass::InVectorString("fsift.lst");
-	auto corrName=fileIOclass::InVectorString("match.lst");
+	auto feaNames=fileIOclass::InVectorString("orb.lst");
+	vector<string> corrName(imgNames.size()-1);
+	for(size_t i=0;i<imgNames.size()-1;++i) corrName[i]=imgNames[i]+".tsk.mtchc";
 
 	vector<vector<pair<int,int> > > correpss;
 
@@ -618,19 +694,15 @@ int main819()
 	{
 		fileIOclass::InVector(corrName[i],[](FILE* fp,pair<int,int>& w){fscanf(fp,"%d %d",&w.first,&w.second);},correpss[i]);
 	}
-	vector<vector<pair<vector<double>,vector<double> > > >  feas(feaNames.size());
+	vector<vector<vector<int> > >  feas(feaNames.size());
 
 	for(size_t i=0;i< feas.size();++i)
 	{
-		fileIOclass::InVector(feaNames[i],[](FILE* fp,pair<vector<double>, vector<double> >& fea)
+		fileIOclass::InVector(feaNames[i],[](FILE* fp,vector<int>& fea)
 		{
-			fea.first.resize(2);
-			fscanf(fp,"%lf %lf\n",&fea.first[0],&fea.first[1]);
-			fea.second.resize(128);
-			for (int j = 0; j < 128; j++)
-			{
-				fscanf(fp,"%lf ",&fea.second[j]);
-			}
+			fea.resize(2);
+			fscanf(fp,"%lf %lf\n",&fea[0],&fea[1]);
+			
 		},feas[i]);
 	}
 
@@ -641,7 +713,7 @@ int main819()
 		{
 			for(int k=0;k<feas[j].size();++k)
 			{
-				Point2f p(feas[j][k].first[0],feas[j][k].first[1]);
+				Point2f p(feas[j][k][0],feas[j][k][1]);
 				circle( img,
 				 p,
 				 1,
@@ -658,8 +730,8 @@ int main819()
 			for(int k=0;k<w.size();++k)
 			{
 				auto& mw=w[k];
-				Point2f p1(feas[j][mw.first].first[0],feas[j][mw.first].first[1]);
-				Point2f p2(feas[j+1][mw.second].first[0],feas[j+1][mw.second].first[1]);
+				Point2f p1(feas[j][mw.first][0],feas[j][mw.first][1]);
+				Point2f p2(feas[j+1][mw.second][0],feas[j+1][mw.second][1]);
 				line(img,p1,p2,Scalar(255,0,0), 1, CV_AA);
 			}
 		}
@@ -680,7 +752,7 @@ int main819()
 		for (int j = 0; j < feas[i].size(); j++)
 		{
 
-			features[i][j]=Point2f(feas[i][j].first[0],feas[i][j].first[1]);
+			features[i][j]=Point2f(feas[i][j][0],feas[i][j][1]);
 		}
 	}
 	for(int i=0;i<correpss.size();++i)
@@ -718,7 +790,7 @@ int main819()
 
 	saveTraj_BannoFormat("trajj.txt",imgNames,trajs,img);
 }
-
+*/
 
 
 int main0818(int argc, char* argv[])
@@ -1090,20 +1162,20 @@ int main9(int argc, char* argv[])
 	return 0;
 }
 
-int main2152(int argc, char* argv[])
+int main134(int argc, char* argv[])
 {
-	//_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
+	_chdir("F:\\tss");
 
-	string s("ladybug_panoramic_001820.jpg.tsk");
+	string s("ladybug_panoramic_001940.jpg.tsk");
 
 	if(argc>1)
 		s=argv[1];
 
 	auto fnms=fileIOclass::InVectorString(s);
 	vector<vector<int> > f1,f2,match;
-	f1=fileIOclass::InVectorSInt(fnms[0]+".orb",2);
-	f2=fileIOclass::InVectorSInt(fnms[1]+".orb",2);
-	match=fileIOclass::InVectorSInt(s+".mtch",2);
+	f1=fileIOclass::InVectorSInt(fnms[0]+".orbc",2);
+	f2=fileIOclass::InVectorSInt(fnms[1]+".orbc",2);
+	match=fileIOclass::InVectorSInt(s+".mtchc",2);
 
 	vector<vector<double> > sph1,sph2;
 	sph1.resize(f1.size(),vector<double>(3));
@@ -1112,7 +1184,7 @@ int main2152(int argc, char* argv[])
 	for(size_t i=0;i<f1.size();++i)
 		sph1[i]=Img2Serph((double)f1[i][0],(double)f1[i][1],512,256);
 	for(size_t i=0;i<f2.size();++i)
-		sph2[i]=Img2Serph((double)f2[1][0],(double)f2[i][1],512,256);
+		sph2[i]=Img2Serph((double)f2[i][0],(double)f2[i][1],512,256);
 
 
 	auto func=[](vector<double> a,vector<double> b)->vector<double>
@@ -1121,17 +1193,21 @@ int main2152(int argc, char* argv[])
 
 		for(size_t i=0;i<3;++i)
 			for(size_t j=0;j<3;++j)
-				rslt[i*3+j]=a[i]*a[j];
+				rslt[i*3+j]=a[i]*b[j];
 
 		return rslt;
 	};
 
-	string oun=s+".tmat";
+	string oun=s+".tmatc";
 	FILE* fp=fopen(oun.c_str(),"w");
 	for(size_t i=0;i<match.size();++i)
 	{
 		int i1=match[i][0];
 		int i2=match[i][1];
+
+		auto tt1=f1[i1];auto tt2=f2[i2];
+		auto tt3=sph1[i1];auto tt4=sph2[i2];
+
 		auto w=func(sph1[i1],sph2[i2]);
 		for(size_t j=0;j<9;++j)
 			fprintf(fp,"%lf ",w[j]);

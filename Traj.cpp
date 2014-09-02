@@ -177,6 +177,7 @@ void simpleTrackPrint(const vector<string>& flnms, const string& flnm)
 	fclose(fp);
 }
 
+
 auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Point2f> >
 {
 	assert(imgs.size()>=2);
@@ -248,73 +249,8 @@ auto incrementalTrajectoryDetect(const vector<string>& imgs)-> vector<vector<Poi
 
 
 
-auto incrementalTrajectoryDetect(vector<vector<Point2f> >& features, vector<map<int,int>>& sth)-> vector<vector<Point2f> >
-{
-	//assert(imgs.size()>=2);
-	
-	
-	vector<vector<Point2f> > trajs;
-
-	trajs.reserve(1000000);
 
 
-	
-	//auto sth=incrementalTrajectoryDetectCore(imgs,features);
-
-	vector<vector<bool> > markers(features.size());
-	
-
-	for (size_t i = 0; i < features.size(); i++)
-	{
-		markers[i].resize(features[i].size(),false);
-	}
-
-	for (size_t i = 0; i < features.size()-1; i++)
-	{
-		cout<<"processing frame " <<i<<endl;
-		for (size_t j = 0; j < markers[i].size(); j++)
-		{
-			if(!markers[i][j])
-			{
-				vector<Point2f> traj;
-				traj.reserve(features.size());
-				if(i!=0)
-					for (int k = 0; k < i; ++k)
-					{
-						traj.push_back(Point2f(0.0,0.0));
-					}
-				traj.push_back(features[i][j]);
-				markers[i][j]=true;
-				Point2f& cur_p=features[i][j];
-				int cur_frame=i;
-				int cur_index=j;
-				int effec_num=1;
-				while( (cur_frame<features.size()-1) && (cur_p.x>=0)&&(cur_p.y>=0)&&(sth[cur_frame].count(cur_index)))
-				{
-					traj.push_back(features[cur_frame+1][sth[cur_frame][cur_index]]);
-					markers[cur_frame+1][sth[cur_frame][cur_index]]=true;
-					cur_p=features[cur_frame+1][sth[cur_frame][cur_index]];
-					cur_index=sth[cur_frame][cur_index];
-					++cur_frame;
-					++effec_num;
-				}
-				
-				if(cur_frame==(features.size()-1)&&(cur_p.x>=0)&&(cur_p.y>=0))
-					traj.push_back(cur_p);
-				if(effec_num>1)
-				while (traj.size()<features.size())
-				{
-					traj.push_back(Point2f(0.0,0.0));
-				}
-
-				if(effec_num>1)
-					trajs.push_back(traj);
-			}
-		}
-	}
-	cout<<"feature tracing finished"<<endl;
-	return trajs;
-}
 
 
 auto incrementalTrajectoryDetect_Effect(const vector<string>& imgs,vector<pair<vector<Point2f> ,vector<Point2f> > >& features)-> pair< vector<vector<Point2f> >, vector<pair<int,int> > >

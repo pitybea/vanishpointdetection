@@ -26,7 +26,7 @@ using namespace parallel;
 
 
 
-int main(int argc,char* argv[])
+int mainsd(int argc,char* argv[])
 {
 	_chdir("D:\\DATA\\ttwoladybug\\ladybug\\tss");
 
