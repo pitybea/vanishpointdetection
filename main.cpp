@@ -648,6 +648,7 @@ int main()
 		ft[i]=fopen((feaNames[i]+".gpts").c_str(),"w");
 
 	FILE* fgood=fopen("goldencorres.lst","w");
+	fprintf(fgood,"%d\n",ind.size());
 	vector<int> sizess(ft.size(),0);
 	for(int i=0;i<track.size();++i)
 	{
