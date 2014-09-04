@@ -647,14 +647,19 @@ int main()
 	for(int i=0;i<ft.size();i++)
 		ft[i]=fopen((feaNames[i]+".gpts").c_str(),"w");
 
+	FILE* fgood=fopen("goldencorres.lst","w");
+	vector<int> sizess(ft.size(),0);
 	for(int i=0;i<track.size();++i)
 	{
 		for (int j = 0; j < track[i].size(); j++)
 		{
-			fprintf(ft[j+ind[i].first],"%d %d %d\n",i,track[i][j].x,track[i][j].y);
+			fprintf(ft[j+ind[i].first],"%d %d %d\n",i+1,track[i][j].x,track[i][j].y);
+			fprintf(fgood,"%d ",++sizess[j+ind[i].first]);
 		}
+		fprintf(fgood,"\n");
 	}
 	
+	fclose(fgood);
 	for(int i=0;i<ft.size();i++)
 		fclose(ft[i]);
 	FILE* fp=fopen("goldenpnt.lst","w");
@@ -662,7 +667,7 @@ int main()
 	for(int i=0;i<ind.size();i++)
 	{
 		for(int j=ind[i].first;j<=ind[i].second;++j)
-			fprintf(fp,"%d ",j);
+			fprintf(fp,"%d ",j+1);
 
 		fprintf(fp,"\n");
 	}	
