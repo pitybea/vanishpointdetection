@@ -599,12 +599,31 @@ int main——()
 };
 
 
+int main929()
+{
+	_chdir("F:\\atss\\imgs");
+
+	auto lst=fileIOclass::InVectorString("img.lst");
+
+	for(int i=0;i<lst.size();++i)
+	{
+		Mat pic=imread(lst[i]);
+		putText(pic,to_string(i*5),Point(10,150),CV_FONT_HERSHEY_SIMPLEX,5,Scalar(0,0,255),2,8,false);
+		auto s="dd_"+lst[i];
+		imwrite(s,pic);
+		if(i%15==0)
+		cout<<i<<" ";
+	}
+
+	return 0;
+}
+
 int main()
 {
-	_chdir("F:\\tss");
+	_chdir("F:\\agood");
 	auto tasks=fileIOclass::InVectorString("task.lst");
 	auto feaNames=fileIOclass::InVectorString("orb.lst");
-	auto mathces=fileIOclass::InVectorString("mtchc.lst");
+	auto mathces=fileIOclass::InVectorString("match.lst");
 
 	vector<vector<vector<int> > > correpss(mathces.size());
 
